@@ -1,32 +1,30 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { Stack } from 'expo-router';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* MAIN NAVIGATION */}
+      <Stack.Screen name="index" />
+      <Stack.Screen name="trips" />
+      <Stack.Screen name="tickets" />
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      {/* BOOKING FLOW */}
+      <Stack.Screen name="booking" />
+      <Stack.Screen name="passenger" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="confirmation" />
+      <Stack.Screen name="ticket" />
+      <Stack.Screen name="receipt" />
+
+      {/* MORE */}
+      <Stack.Screen name="profile" />
+      <Stack.Screen name="tracking" />
+      <Stack.Screen name="parcel" />
+      <Stack.Screen name="luggage" />
+      <Stack.Screen name="payments" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="support" />
+      <Stack.Screen name="settings" />
+    </Stack>
   );
 }
