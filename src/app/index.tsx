@@ -3,11 +3,25 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { db } from '@/firebase/config';
+import { Redirect } from 'expo-router';
+import { useAuth } from '@/auth/AuthContext';
 
 const ROUTES = ['Kumba', 'Yaoundé'];
 
 export default function HomeScreen() {
+
+    const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
+    return <Redirect href="/auth" />;
+  }
 const router = useRouter();
+
   const [from, setFrom] = useState('Kumba');
   const [to, setTo] = useState('Yaoundé');
   const [showFrom, setShowFrom] = useState(false);
