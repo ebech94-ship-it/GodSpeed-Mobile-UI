@@ -1,57 +1,125 @@
+
+import { useAuth } from '@/auth/AuthContext';
+import { db } from '@/firebase/config';
 import { useRouter } from 'expo-router';
+import { collection, doc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
-type PaymentMethod = {
-  id: string;
-  name: string;
-  subtitle: string;
-  icon: string;
-  enabled: boolean;
+type WalletData = {
+  balance?: number;
+  currency?: string;
+  status?: string;
 };
 
-type PaymentTransaction = {
+type WalletTransaction = {
   id: string;
-  description: string;
-  date: string;
-  amount: string;
-  status: 'successful' | 'pending' | 'failed';
+  type?: string;
+  amount?: number;
+  status?: string;
+  reference?: string;
+  createdAt?: any;
 };
-
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: 'mtn',
-    name: 'MTN Mobile Money',
-    subtitle: 'Pay with your MTN number',
-    icon: 'M',
-    enabled: true,
-  },
-  {
-    id: 'orange',
-    name: 'Orange Money',
-    subtitle: 'Pay with your Orange number',
-    icon: 'O',
-    enabled: true,
-  },
-  {
-    id: 'card',
-    name: 'Bank Card',
-    subtitle: 'Visa or Mastercard',
-    icon: '▣',
-    enabled: true,
-  },
-];
-
-const RECENT_PAYMENTS: PaymentTransaction[] = [];
 
 export default function PaymentsScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setWallet(null);
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    const walletRef = doc(db, 'wallets', user.uid);
+
+    const unsubscribeWallet = onSnapshot(
+      walletRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setWallet(snapshot.data() as WalletData);
+        } else {
+          setWallet({
+            balance: 0,
+            currency: 'XAF',
+            status: 'active',
+          });
+        }
+
+        setLoading(false);
+      },
+      (error) => {
+        console.error('WALLET ERROR:', error);
+
+        setWallet({
+          balance: 0,
+          currency: 'XAF',
+          status: 'active',
+        });
+
+        setLoading(false);
+      }
+    );
+
+    const transactionsRef = query(
+      collection(db, 'walletTransactions'),
+      orderBy('createdAt', 'desc'),
+      limit(10)
+    );
+
+    const unsubscribeTransactions = onSnapshot(
+      transactionsRef,
+      (snapshot) => {
+        const items: WalletTransaction[] = [];
+
+        snapshot.forEach((item) => {
+          const data = item.data();
+
+          // Only show transactions belonging to this passenger.
+          if (data.userId === user.uid) {
+            items.push({
+              id: item.id,
+              ...data,
+            } as WalletTransaction);
+          }
+        });
+
+        setTransactions(items);
+      },
+      (error) => {
+        console.error('TRANSACTION ERROR:', error);
+        setTransactions([]);
+      }
+    );
+
+    return () => {
+      unsubscribeWallet();
+      unsubscribeTransactions();
+    };
+  }, [user]);
+
+  if (!user) {
+    return null;
+  }
+
+  const balance = Number(wallet?.balance || 0);
+  const currency = wallet?.currency || 'XAF';
+
+  const formattedBalance = balance.toLocaleString();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -59,174 +127,322 @@ export default function PaymentsScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Text style={styles.backIcon}>‹</Text>
+            <Text style={styles.backText}>‹</Text>
           </Pressable>
 
-          <Text style={styles.headerTitle}>Payments</Text>
+          <View>
+            <Text style={styles.headerTitle}>GodSpeed Wallet</Text>
+            <Text style={styles.headerFrench}>
+              Portefeuille GodSpeed
+            </Text>
+          </View>
 
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Payment Hero */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View style={styles.walletIcon}>
-              <Text style={styles.walletEmoji}>▣</Text>
+        {/* BALANCE */}
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceTop}>
+            <View>
+              <Text style={styles.balanceLabel}>
+                AVAILABLE BALANCE
+              </Text>
+
+              <Text style={styles.balanceFrench}>
+                Solde disponible
+              </Text>
             </View>
 
-            <View style={styles.securePill}>
-              <View style={styles.secureDot} />
-              <Text style={styles.secureText}>SECURE</Text>
+            <View style={styles.walletIcon}>
+              <Text style={styles.walletIconText}>₣</Text>
             </View>
           </View>
 
-          <Text style={styles.heroTitle}>
-            Your payments
-          </Text>
+          {loading ? (
+            <ActivityIndicator
+              color="#FFFFFF"
+              size="small"
+              style={styles.loader}
+            />
+          ) : (
+            <Text style={styles.balanceAmount}>
+              {formattedBalance} {currency}
+            </Text>
+          )}
 
-          <Text style={styles.heroText}>
-            Manage your payment methods and view your
-            transaction history.
+          <Text style={styles.balanceNote}>
+            Use your GodSpeed wallet to pay for trips and other
+            supported services.
           </Text>
         </View>
 
-        {/* Methods */}
-        <Text style={styles.sectionTitle}>
-          Payment methods
-        </Text>
+        {/* MONEY ACTIONS */}
+        <Text style={styles.sectionTitle}>Manage your money</Text>
+
+        <View style={styles.actionsGrid}>
+          <Pressable
+            style={styles.actionCard}
+            onPress={() => router.push('/wallet-deposit')}
+          >
+            <View style={styles.depositIcon}>
+              <Text style={styles.actionIconText}>+</Text>
+            </View>
+
+            <Text style={styles.actionTitle}>Deposit</Text>
+
+            <Text style={styles.actionSubtitle}>
+              Add money
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.actionCard}
+            onPress={() => router.push('/wallet-withdraw')}
+          >
+            <View style={styles.withdrawIcon}>
+              <Text style={styles.actionIconText}>↗</Text>
+            </View>
+
+            <Text style={styles.actionTitle}>Withdraw</Text>
+
+            <Text style={styles.actionSubtitle}>
+              Cash out
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.actionCard}
+            onPress={() => router.push('/wallet-send')}
+          >
+            <View style={styles.sendIcon}>
+              <Text style={styles.actionIconText}>↑</Text>
+            </View>
+
+            <Text style={styles.actionTitle}>Send</Text>
+
+            <Text style={styles.actionSubtitle}>
+              Send money
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.actionCard}
+            onPress={() => router.push('/wallet-receive')}
+          >
+            <View style={styles.receiveIcon}>
+              <Text style={styles.actionIconText}>↓</Text>
+            </View>
+
+            <Text style={styles.actionTitle}>Receive</Text>
+
+            <Text style={styles.actionSubtitle}>
+              Receive money
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* PAYMENT METHODS */}
+        <Text style={styles.sectionTitle}>Available methods</Text>
 
         <View style={styles.methodsCard}>
-          {PAYMENT_METHODS.map((method, index) => (
-            <View key={method.id}>
-              <PaymentMethodRow method={method} />
-
-              {index < PAYMENT_METHODS.length - 1 && (
-                <View style={styles.divider} />
-              )}
+          <View style={styles.methodRow}>
+            <View style={styles.mtnLogo}>
+              <Text style={styles.mtnText}>MTN</Text>
             </View>
-          ))}
+
+            <View style={styles.methodText}>
+              <Text style={styles.methodTitle}>
+                MTN Mobile Money
+              </Text>
+
+              <Text style={styles.methodSubtitle}>
+                Available
+              </Text>
+            </View>
+
+            <View style={styles.availableBadge}>
+              <Text style={styles.availableText}>
+                LIVE
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.methodRow}>
+            <View style={styles.orangeLogo}>
+              <Text style={styles.orangeText}>OR</Text>
+            </View>
+
+            <View style={styles.methodText}>
+              <Text style={styles.methodTitle}>
+                Orange Money
+              </Text>
+
+              <Text style={styles.methodSubtitle}>
+                Available
+              </Text>
+            </View>
+
+            <View style={styles.availableBadge}>
+              <Text style={styles.availableText}>
+                LIVE
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.methodRow}>
+            <View style={styles.cardLogo}>
+              <Text style={styles.cardText}>CARD</Text>
+            </View>
+
+            <View style={styles.methodText}>
+              <Text style={styles.methodTitle}>
+                Bank Card
+              </Text>
+
+              <Text style={styles.methodSubtitle}>
+                Visa / Mastercard
+              </Text>
+            </View>
+
+            <View style={styles.comingBadge}>
+              <Text style={styles.comingText}>
+                SOON
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Transactions */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Recent payments
-          </Text>
+        {/* TRANSACTIONS */}
+        <View style={styles.transactionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Recent transactions
+            </Text>
+          </View>
 
-          {RECENT_PAYMENTS.length > 0 && (
-            <Pressable>
-              <Text style={styles.viewAll}>VIEW ALL</Text>
+          {transactions.length > 0 && (
+            <Pressable
+              onPress={() => router.push('/wallet-transactions')}
+            >
+              <Text style={styles.viewAll}>
+                View all
+              </Text>
             </Pressable>
           )}
         </View>
 
-        {RECENT_PAYMENTS.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Text style={styles.emptyEmoji}>₣</Text>
+        <View style={styles.transactionsCard}>
+          {transactions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>₣</Text>
+
+              <Text style={styles.emptyTitle}>
+                No transactions yet
+              </Text>
+
+              <Text style={styles.emptyText}>
+                Your wallet activity will appear here.
+              </Text>
             </View>
-
-            <Text style={styles.emptyTitle}>
-              No payments yet
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Your ticket and other payment transactions
-              will appear here.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.transactionsCard}>
-            {RECENT_PAYMENTS.map((transaction) => (
+          ) : (
+            transactions.map((transaction) => (
               <TransactionRow
                 key={transaction.id}
                 transaction={transaction}
               />
-            ))}
-          </View>
-        )}
+            ))
+          )}
+        </View>
 
         <Text style={styles.footer}>
-          GODSPEED MOBILITY · SECURE PAYMENTS
+          GODSPEED MOBILITY • SECURE WALLET
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function PaymentMethodRow({
-  method,
-}: {
-  method: PaymentMethod;
-}) {
-  return (
-    <Pressable
-      style={styles.methodRow}
-      disabled={!method.enabled}
-    >
-      <View style={styles.methodIcon}>
-        <Text style={styles.methodIconText}>
-          {method.icon}
-        </Text>
-      </View>
-
-      <View style={styles.methodInfo}>
-        <Text style={styles.methodName}>
-          {method.name}
-        </Text>
-
-        <Text style={styles.methodSubtitle}>
-          {method.subtitle}
-        </Text>
-      </View>
-
-      <Text style={styles.chevron}>›</Text>
-    </Pressable>
-  );
-}
-
 function TransactionRow({
   transaction,
 }: {
-  transaction: PaymentTransaction;
+  transaction: WalletTransaction;
 }) {
+  const amount = Number(transaction.amount || 0);
+  const isIncoming =
+    transaction.type === 'deposit' ||
+    transaction.type === 'receive' ||
+    transaction.type === 'refund';
+
+  const title =
+    transaction.type === 'deposit'
+      ? 'Wallet deposit'
+      : transaction.type === 'withdrawal'
+      ? 'Withdrawal'
+      : transaction.type === 'payment'
+      ? 'Trip payment'
+      : transaction.type === 'send'
+      ? 'Money sent'
+      : transaction.type === 'receive'
+      ? 'Money received'
+      : transaction.type === 'refund'
+      ? 'Refund'
+      : 'Wallet transaction';
+
+  const sign = isIncoming ? '+' : '-';
+
   return (
     <View style={styles.transactionRow}>
-      <View style={styles.transactionIcon}>
-        <Text style={styles.transactionIconText}>₣</Text>
+      <View
+        style={[
+          styles.transactionIcon,
+          isIncoming
+            ? styles.incomingIcon
+            : styles.outgoingIcon,
+        ]}
+      >
+        <Text
+          style={[
+            styles.transactionIconText,
+            isIncoming
+              ? styles.incomingText
+              : styles.outgoingText,
+          ]}
+        >
+          {isIncoming ? '+' : '−'}
+        </Text>
       </View>
 
       <View style={styles.transactionInfo}>
-        <Text style={styles.transactionDescription}>
-          {transaction.description}
+        <Text style={styles.transactionTitle}>
+          {title}
         </Text>
 
-        <Text style={styles.transactionDate}>
-          {transaction.date}
+        <Text style={styles.transactionStatus}>
+          {transaction.status || 'pending'}
         </Text>
       </View>
 
-      <View style={styles.transactionRight}>
-        <Text style={styles.transactionAmount}>
-          {transaction.amount}
-        </Text>
-
-        <Text
-          style={[
-            styles.transactionStatus,
-            transaction.status === 'successful' &&
-              styles.successStatus,
-          ]}
-        >
-          {transaction.status}
-        </Text>
-      </View>
+      <Text
+        style={[
+          styles.transactionAmount,
+          isIncoming
+            ? styles.incomingText
+            : styles.outgoingText,
+        ]}
+      >
+        {sign}
+        {amount.toLocaleString()} XAF
+      </Text>
     </View>
   );
 }
@@ -243,7 +459,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 58,
+    height: 68,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -254,13 +470,13 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8ECF1',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E8ECF1',
   },
 
-  backIcon: {
+  backText: {
     fontSize: 30,
     lineHeight: 32,
     color: '#0B1F3A',
@@ -273,136 +489,260 @@ const styles = StyleSheet.create({
     color: '#0B1F3A',
   },
 
+  headerFrench: {
+    fontSize: 10,
+    color: '#8995A5',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
   headerSpacer: {
     width: 42,
   },
 
-  heroCard: {
-    marginTop: 10,
-    borderRadius: 23,
+  balanceCard: {
     backgroundColor: '#0B1F3A',
+    borderRadius: 24,
     padding: 20,
+    marginBottom: 22,
   },
 
-  heroTop: {
+  balanceTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  balanceLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: '#7DBBFF',
+  },
+
+  balanceFrench: {
+    fontSize: 9,
+    color: '#AABBCD',
+    marginTop: 3,
   },
 
   walletIcon: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#173A63',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  walletEmoji: {
-    fontSize: 18,
-    color: '#0B1F3A',
-  },
-
-  securePill: {
-    marginLeft: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#1B304C',
-  },
-
-  secureDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-    marginRight: 5,
-  },
-
-  secureText: {
+  walletIconText: {
     color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-  },
-
-  heroTitle: {
-    marginTop: 18,
-    color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
   },
 
-  heroText: {
-    marginTop: 6,
-    maxWidth: 290,
-    color: '#AEBACC',
+  balanceAmount: {
+    fontSize: 29,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 22,
+  },
+
+  loader: {
+    alignSelf: 'flex-start',
+    marginTop: 15,
+  },
+
+  balanceNote: {
     fontSize: 10,
-    lineHeight: 16,
+    lineHeight: 15,
+    color: '#AABBCD',
+    marginTop: 8,
   },
 
   sectionTitle: {
-    marginTop: 23,
-    marginBottom: 9,
-    marginLeft: 3,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '900',
-    color: '#68778A',
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    color: '#0B1F3A',
+    marginBottom: 10,
+  },
+
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 23,
+  },
+
+  actionCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E7EBF0',
+  },
+
+  depositIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#E8F7EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 11,
+  },
+
+  withdrawIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#FFF3E8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 11,
+  },
+
+  sendIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#E8F1FB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 11,
+  },
+
+  receiveIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#F0EAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 11,
+  },
+
+  actionIconText: {
+    fontSize: 21,
+    fontWeight: '900',
+    color: '#0B1F3A',
+  },
+
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0B1F3A',
+  },
+
+  actionSubtitle: {
+    fontSize: 10,
+    color: '#8995A5',
+    marginTop: 3,
   },
 
   methodsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 19,
+    paddingHorizontal: 15,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#E7EBF0',
-    paddingHorizontal: 15,
   },
 
   methodRow: {
-    minHeight: 72,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  methodIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 14,
-    backgroundColor: '#F0F3F7',
+  mtnLogo: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#FFD100',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  methodIconText: {
-    fontSize: 15,
+  mtnText: {
+    color: '#000000',
+    fontSize: 11,
     fontWeight: '900',
-    color: '#0B1F3A',
   },
 
-  methodInfo: {
+  orangeLogo: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#FF7900',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  orangeText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+
+  cardLogo: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#E8F1FB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cardText: {
+    color: '#1976D2',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+
+  methodText: {
     flex: 1,
     marginLeft: 12,
   },
 
-  methodName: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#182B43',
+  methodTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0B1F3A',
   },
 
   methodSubtitle: {
-    marginTop: 4,
-    fontSize: 9,
-    color: '#8995A4',
+    fontSize: 10,
+    color: '#8995A5',
+    marginTop: 3,
   },
 
-  chevron: {
-    fontSize: 23,
-    color: '#9AA6B5',
+  availableBadge: {
+    backgroundColor: '#E8F7EE',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+
+  availableText: {
+    color: '#16803C',
+    fontSize: 8,
+    fontWeight: '900',
+  },
+
+  comingBadge: {
+    backgroundColor: '#F0F2F5',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+
+  comingText: {
+    color: '#7B8795',
+    fontSize: 8,
+    fontWeight: '900',
   },
 
   divider: {
@@ -410,89 +750,95 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF1F4',
   },
 
-  sectionHeader: {
+  transactionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   viewAll: {
-    marginLeft: 'auto',
-    marginTop: 16,
-    marginBottom: 9,
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#68778A',
-    letterSpacing: 0.7,
-  },
-
-  emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E7EBF0',
-    paddingHorizontal: 25,
-    paddingVertical: 28,
-    alignItems: 'center',
-  },
-
-  emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 17,
-    backgroundColor: '#EEF2F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 11,
-  },
-
-  emptyEmoji: {
-    fontSize: 21,
-    color: '#0B1F3A',
-    fontWeight: '900',
-  },
-
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#182B43',
-  },
-
-  emptyText: {
-    maxWidth: 270,
-    textAlign: 'center',
-    marginTop: 5,
-    fontSize: 10,
-    lineHeight: 15,
-    color: '#8A96A5',
+    color: '#1976D2',
+    fontSize: 11,
+    fontWeight: '800',
   },
 
   transactionsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 19,
     borderWidth: 1,
     borderColor: '#E7EBF0',
-    paddingHorizontal: 15,
+    overflow: 'hidden',
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+  },
+
+  emptyIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#F0F3F7',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    lineHeight: 46,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#7D8A9B',
+    marginBottom: 10,
+  },
+
+  emptyTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0B1F3A',
+  },
+
+  emptyText: {
+    fontSize: 10,
+    color: '#8995A5',
+    marginTop: 4,
+    textAlign: 'center',
   },
 
   transactionRow: {
-    minHeight: 72,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF1F4',
   },
 
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: '#F0F3F7',
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
+  incomingIcon: {
+    backgroundColor: '#E8F7EE',
+  },
+
+  outgoingIcon: {
+    backgroundColor: '#FDECEC',
+  },
+
   transactionIconText: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '900',
-    color: '#0B1F3A',
+  },
+
+  incomingText: {
+    color: '#16803C',
+  },
+
+  outgoingText: {
+    color: '#B42318',
   },
 
   transactionInfo: {
@@ -500,46 +846,31 @@ const styles = StyleSheet.create({
     marginLeft: 11,
   },
 
-  transactionDescription: {
-    fontSize: 11,
+  transactionTitle: {
+    fontSize: 12,
     fontWeight: '800',
-    color: '#182B43',
+    color: '#0B1F3A',
   },
 
-  transactionDate: {
-    marginTop: 4,
+  transactionStatus: {
     fontSize: 9,
-    color: '#8A96A5',
-  },
-
-  transactionRight: {
-    alignItems: 'flex-end',
+    color: '#8995A5',
+    marginTop: 3,
+    textTransform: 'capitalize',
   },
 
   transactionAmount: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#182B43',
-  },
-
-  transactionStatus: {
-    marginTop: 4,
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#8995A4',
-    textTransform: 'uppercase',
-  },
-
-  successStatus: {
-    color: '#516176',
   },
 
   footer: {
     textAlign: 'center',
     marginTop: 28,
-    fontSize: 8,
-    color: '#A4AEBA',
+    fontSize: 9,
     fontWeight: '900',
-    letterSpacing: 1.2,
+    color: '#A4AEBA',
+    letterSpacing: 1,
   },
 });
+
