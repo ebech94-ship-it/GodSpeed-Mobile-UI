@@ -1,204 +1,357 @@
+
+import { useAuth } from '@/auth/AuthContext';
+import { auth, db } from '@/firebase/config';
 import { useRouter } from 'expo-router';
+import { signOut } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    View,
 } from 'react-native';
-
-type SettingsState = {
-  notifications: boolean;
-  location: boolean;
-};
-
-const SETTINGS: SettingsState = {
-  notifications: true,
-  location: true,
-};
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { user, profile } = useAuth();
+
+  const [notifications, setNotifications] = useState(true);
+  const [tripUpdates, setTripUpdates] = useState(true);
+  const [promotions, setPromotions] = useState(false);
+  const [location, setLocation] = useState(true);
+  const [language, setLanguage] = useState<'English' | 'Français'>('English');
+
+  const [saving, setSaving] = useState(false);
+
+  // Load saved preferences from the user's profile
+  useEffect(() => {
+    if (!profile?.preferences) return;
+
+    setNotifications(profile.preferences.notifications ?? true);
+    setTripUpdates(profile.preferences.tripUpdates ?? true);
+    setPromotions(profile.preferences.promotions ?? false);
+    setLocation(profile.preferences.location ?? true);
+    setLanguage(profile.preferences.language ?? 'English');
+  }, [profile]);
+
+  const updatePreference = async (
+    field:
+      | 'notifications'
+      | 'tripUpdates'
+      | 'promotions'
+      | 'location'
+      | 'language',
+    value: boolean | 'English' | 'Français'
+  ) => {
+    if (!user) return;
+
+    try {
+      setSaving(true);
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        [`preferences.${field}`]: value,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Preference update error:', error);
+
+      Alert.alert(
+        'Update failed',
+        'We could not save this setting. Please try again.'
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleNotifications = async (value: boolean) => {
+    setNotifications(value);
+    await updatePreference('notifications', value);
+  };
+
+  const handleTripUpdates = async (value: boolean) => {
+    setTripUpdates(value);
+    await updatePreference('tripUpdates', value);
+  };
+
+  const handlePromotions = async (value: boolean) => {
+    setPromotions(value);
+    await updatePreference('promotions', value);
+  };
+
+  const handleLocation = async (value: boolean) => {
+    setLocation(value);
+    await updatePreference('location', value);
+  };
+
+  const handleLanguage = async (value: 'English' | 'Français') => {
+    setLanguage(value);
+    await updatePreference('language', value);
+  };
+
+  const handleSecurity = () => {
+    Alert.alert(
+      'Password & Security',
+      'Password changes and account security controls will be available here.'
+    );
+  };
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign out',
+      'Are you sure you want to sign out of your GodSpeed account?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              router.replace('/auth');
+            } catch (error) {
+              console.error('Sign out error:', error);
+
+              Alert.alert(
+                'Sign out failed',
+                'We could not sign you out. Please try again.'
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backIcon}>‹</Text>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>‹</Text>
           </Pressable>
 
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.title}>Account Settings</Text>
 
           <View style={styles.headerSpacer} />
         </View>
 
-        <Text style={styles.sectionTitle}>
-          Preferences
-        </Text>
+        {saving && (
+          <View style={styles.savingBox}>
+            <ActivityIndicator size="small" />
+            <Text style={styles.savingText}>Saving...</Text>
+          </View>
+        )}
+
+        {/* NOTIFICATIONS */}
+        <Text style={styles.sectionTitle}>Notifications</Text>
 
         <View style={styles.card}>
           <SettingRow
-            icon="🔔"
-            title="Notifications"
-            subtitle="Trip and booking updates"
-            enabled={SETTINGS.notifications}
+            title="Push notifications"
+            description="Receive important notifications from GodSpeed."
+            value={notifications}
+            onValueChange={handleNotifications}
           />
 
           <View style={styles.divider} />
 
           <SettingRow
-            icon="📍"
-            title="Location"
-            subtitle="Used for journey tracking"
-            enabled={SETTINGS.location}
+            title="Trip updates"
+            description="Get updates about your bookings and trips."
+            value={tripUpdates}
+            onValueChange={handleTripUpdates}
+          />
+
+          <View style={styles.divider} />
+
+          <SettingRow
+            title="Offers & promotions"
+            description="Receive GodSpeed offers and promotional messages."
+            value={promotions}
+            onValueChange={handlePromotions}
           />
         </View>
 
-        <Text style={styles.sectionTitle}>
-          App
-        </Text>
+        {/* LOCATION */}
+        <Text style={styles.sectionTitle}>Location</Text>
 
         <View style={styles.card}>
-          <SimpleRow
-            icon="ℹ"
-            title="About GodSpeed Mobility"
-          />
-
-          <View style={styles.divider} />
-
-          <SimpleRow
-            icon="▣"
-            title="Terms & conditions"
-          />
-
-          <View style={styles.divider} />
-
-          <SimpleRow
-            icon="⌕"
-            title="Privacy policy"
+          <SettingRow
+            title="Location services"
+            description="Allow GodSpeed features to use your location preference."
+            value={location}
+            onValueChange={handleLocation}
           />
         </View>
 
-        <View style={styles.versionBlock}>
-          <Text style={styles.versionLabel}>
-            GODSPEED MOBILITY
+        {/* LANGUAGE */}
+        <Text style={styles.sectionTitle}>Language</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.rowTitle}>App language</Text>
+          <Text style={styles.rowDescription}>
+            Choose the language used by the application.
           </Text>
 
-          <Text style={styles.version}>
-            Version 1.0.0
-          </Text>
+          <View style={styles.languageRow}>
+            <Pressable
+              style={[
+                styles.languageButton,
+                language === 'English' && styles.languageButtonActive,
+              ]}
+              onPress={() => handleLanguage('English')}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  language === 'English' && styles.languageTextActive,
+                ]}
+              >
+                English
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.languageButton,
+                language === 'Français' && styles.languageButtonActive,
+              ]}
+              onPress={() => handleLanguage('Français')}
+            >
+              <Text
+                style={[
+                  styles.languageText,
+                  language === 'Français' && styles.languageTextActive,
+                ]}
+              >
+                Français
+              </Text>
+            </Pressable>
+          </View>
         </View>
+
+        {/* SECURITY */}
+        <Text style={styles.sectionTitle}>Security</Text>
+
+        <View style={styles.card}>
+          <Pressable style={styles.actionRow} onPress={handleSecurity}>
+            <View style={styles.actionTextContainer}>
+              <Text style={styles.rowTitle}>Password & Security</Text>
+              <Text style={styles.rowDescription}>
+                Manage your password and account security.
+              </Text>
+            </View>
+
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+        </View>
+
+        {/* ACCOUNT */}
+        <Text style={styles.sectionTitle}>Account</Text>
+
+        <View style={styles.card}>
+          <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutText}>Sign out</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.footer}>
+          GodSpeed Mobility
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 function SettingRow({
-  icon,
   title,
-  subtitle,
-  enabled,
+  description,
+  value,
+  onValueChange,
 }: {
-  icon: string;
   title: string;
-  subtitle: string;
-  enabled: boolean;
+  description: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
 }) {
   return (
-    <Pressable style={styles.settingRow}>
-      <View style={styles.settingIcon}>
-        <Text style={styles.settingEmoji}>{icon}</Text>
+    <View style={styles.settingRow}>
+      <View style={styles.settingTextContainer}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowDescription}>{description}</Text>
       </View>
 
-      <View style={styles.settingInfo}>
-        <Text style={styles.settingTitle}>{title}</Text>
-        <Text style={styles.settingSubtitle}>{subtitle}</Text>
-      </View>
-
-      <View
-        style={[
-          styles.toggle,
-          enabled && styles.toggleEnabled,
-        ]}
-      >
-        <View
-          style={[
-            styles.toggleKnob,
-            enabled && styles.toggleKnobEnabled,
-          ]}
-        />
-      </View>
-    </Pressable>
-  );
-}
-
-function SimpleRow({
-  icon,
-  title,
-}: {
-  icon: string;
-  title: string;
-}) {
-  return (
-    <Pressable style={styles.simpleRow}>
-      <View style={styles.simpleIcon}>
-        <Text style={styles.simpleIconText}>{icon}</Text>
-      </View>
-
-      <Text style={styles.simpleTitle}>{title}</Text>
-
-      <Text style={styles.chevron}>›</Text>
-    </Pressable>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safe: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
 
   container: {
-    paddingHorizontal: 18,
-    paddingBottom: 35,
+    padding: 20,
+    paddingBottom: 40,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   header: {
-    height: 58,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 24,
   },
 
   backButton: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: 21,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8ECF1',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  backIcon: {
-    fontSize: 30,
-    lineHeight: 32,
+  backText: {
+    fontSize: 32,
     color: '#0B1F3A',
-    marginTop: -3,
+    lineHeight: 34,
   },
 
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
     color: '#0B1F3A',
   },
 
@@ -206,139 +359,128 @@ const styles = StyleSheet.create({
     width: 42,
   },
 
+  savingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  savingText: {
+    color: '#666',
+    fontSize: 13,
+  },
+
   sectionTitle: {
-    marginTop: 23,
-    marginBottom: 9,
-    marginLeft: 3,
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#68778A',
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0B1F3A',
+    marginTop: 18,
+    marginBottom: 10,
   },
 
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E7EBF0',
-    paddingHorizontal: 15,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
 
   settingRow: {
     minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
   },
 
-  settingIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 14,
-    backgroundColor: '#F0F3F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  settingEmoji: {
-    fontSize: 18,
-  },
-
-  settingInfo: {
+  settingTextContainer: {
     flex: 1,
-    marginLeft: 12,
   },
 
-  settingTitle: {
+  rowTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0B1F3A',
+  },
+
+  rowDescription: {
     fontSize: 12,
-    fontWeight: '900',
-    color: '#182B43',
-  },
-
-  settingSubtitle: {
+    color: '#6B7280',
     marginTop: 4,
-    fontSize: 9,
-    color: '#8995A4',
-  },
-
-  toggle: {
-    width: 43,
-    height: 25,
-    borderRadius: 14,
-    backgroundColor: '#DCE2E8',
-    padding: 3,
-    justifyContent: 'center',
-  },
-
-  toggleEnabled: {
-    backgroundColor: '#0B1F3A',
-  },
-
-  toggleKnob: {
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-  },
-
-  toggleKnobEnabled: {
-    alignSelf: 'flex-end',
+    lineHeight: 17,
   },
 
   divider: {
     height: 1,
-    backgroundColor: '#EEF1F4',
+    backgroundColor: '#E5E7EB',
   },
 
-  simpleRow: {
-    minHeight: 65,
+  languageRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 12,
+  },
+
+  languageButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F1F3F5',
+    alignItems: 'center',
+  },
+
+  languageButtonActive: {
+    backgroundColor: '#1976D2',
+  },
+
+  languageText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#555',
+  },
+
+  languageTextActive: {
+    color: '#FFFFFF',
+  },
+
+  actionRow: {
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  simpleIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: '#F0F3F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  simpleIconText: {
-    fontSize: 15,
-    color: '#0B1F3A',
-    fontWeight: '900',
-  },
-
-  simpleTitle: {
+  actionTextContainer: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#182B43',
   },
 
   chevron: {
-    fontSize: 23,
-    color: '#9AA6B5',
+    fontSize: 28,
+    color: '#9CA3AF',
   },
 
-  versionBlock: {
-    alignItems: 'center',
+  signOutButton: {
+  minHeight: 54,
+  backgroundColor: '#D32F2F',
+  borderRadius: 12,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginVertical: 10,
+},
+
+signOutText: {
+  color: '#FFFFFF',
+  fontSize: 15,
+  fontWeight: '800',
+},
+
+  footer: {
+    textAlign: 'center',
+    color: '#9CA3AF',
+    fontSize: 12,
     marginTop: 30,
   },
-
-  versionLabel: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#A4AEBA',
-    letterSpacing: 1.3,
-  },
-
-  version: {
-    marginTop: 5,
-    fontSize: 9,
-    color: '#A4AEBA',
-  },
 });
+

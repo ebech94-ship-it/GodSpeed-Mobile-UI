@@ -1,17 +1,31 @@
-import TripSearch from '@/components/home/TripSearch';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { db } from '@/firebase/config';
-import { Redirect } from 'expo-router';
 import { useAuth } from '@/auth/AuthContext';
+import { Redirect, useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 const ROUTES = ['Kumba', 'Yaoundé'];
 
 export default function HomeScreen() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-    const { user, loading } = useAuth();
+  const [from, setFrom] = useState('Kumba');
+  const [to, setTo] = useState('Yaoundé');
+  const [showFrom, setShowFrom] = useState(false);
+  const [showTo, setShowTo] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [passengers, setPassengers] = useState(1);
+  const [travelDate, setTravelDate] = useState('2026-09-14');
+  const [showDate, setShowDate] = useState(false);
 
   if (loading) {
     return null;
@@ -20,21 +34,23 @@ export default function HomeScreen() {
   if (!user) {
     return <Redirect href="/auth" />;
   }
-const router = useRouter();
-
-  const [from, setFrom] = useState('Kumba');
-  const [to, setTo] = useState('Yaoundé');
-  const [showFrom, setShowFrom] = useState(false);
-  const [showTo, setShowTo] = useState(false);
-  const [showMore, setShowMore] = useState(false);
-  const [passengers, setPassengers] = useState(1);
-const [travelDate, setTravelDate] = useState('2026-09-14');
-const [showDate, setShowDate] = useState(false);
 
   const swapLocations = () => {
-    const currentFrom = from;
+    const oldFrom = from;
     setFrom(to);
-    setTo(currentFrom);
+    setTo(oldFrom);
+  };
+
+  const handleSearch = () => {
+    router.push({
+      pathname: '/trips',
+      params: {
+        from,
+        to,
+        date: travelDate,
+        passengers: String(passengers),
+      },
+    });
   };
 
   return (
@@ -52,38 +68,35 @@ const [showDate, setShowDate] = useState(false);
             </View>
 
             <Pressable
-  style={styles.profileButton}
-  onPress={() => router.push('/profile')}
->
-  <Text style={styles.profileIcon}>👤</Text>
-</Pressable>
+              style={styles.profileButton}
+              onPress={() => router.push('/profile')}
+            >
+              <Text style={styles.profileIcon}>👤</Text>
+            </Pressable>
           </View>
 
-          {/* HERO BUS CARD */}
+          {/* HERO */}
           <View style={styles.heroCard}>
-            <View style={styles.heroOverlay} />
-
-            <View style={styles.heroText}>
-              <Text style={styles.heroSmall}>TRAVEL WITH</Text>
-
-              <Text style={styles.heroTitle}>GODSPEED TECH</Text>
-
-              <Text style={styles.heroFrench}>
-                VOYAGEZ AVEC GODSPEED TECH
-              </Text>
-            </View>
-
             <Image
               source={require('../../assets/images/bus.png')}
               style={styles.busImage}
-              resizeMode="contain"
+              resizeMode="cover"
             />
+
+            <View style={styles.heroOverlay} />
+
+            <View style={styles.heroText}>
+              <Text style={styles.heroSmall}>GODSPEED TECH</Text>
+              <Text style={styles.heroTitle}>MOBILITY</Text>
+              <Text style={styles.heroFrench}>
+                Voyagez simplement. Voyagez mieux.
+              </Text>
+            </View>
 
             <View style={styles.heroBottom}>
               <Text style={styles.heroTagline}>
                 Comfortable • Safe • On Time
               </Text>
-
               <Text style={styles.heroFrenchTagline}>
                 Confortable • Sûr • À l'heure
               </Text>
@@ -91,94 +104,175 @@ const [showDate, setShowDate] = useState(false);
           </View>
 
           {/* SEARCH */}
-         <TripSearch
-  from={from}
-  to={to}
-   travelDate={travelDate}
-  onDatePress={() => setShowDate(true)}
-  passengers={passengers}
-  onFromPress={() => setShowFrom(true)}
-  onToPress={() => setShowTo(true)}
-  onSwap={swapLocations}
-  onDecreasePassengers={() =>
-    setPassengers(Math.max(1, passengers - 1))
-  }
-  onIncreasePassengers={() =>
-    setPassengers(passengers + 1)
-  }
-  onSearch={() => {
-  router.push({
-    pathname: '/trips',
-    params: {
-      from,
-      to,
-         travelDate,
-      passengers: passengers.toString(),
-    },
-  });
-}}
-/>
+          <View style={styles.searchSection}>
+            <Text style={styles.sectionHeading}>Where are you going?</Text>
+            <Text style={styles.sectionFrench}>
+              Où souhaitez-vous aller ?
+            </Text>
+
+            {/* LOCATIONS */}
+            <View style={styles.locationsRow}>
+              <Pressable
+                style={styles.locationCard}
+                onPress={() => setShowFrom(true)}
+              >
+                <View style={styles.locationIconBlue}>
+                  <Text style={styles.locationPin}>●</Text>
+                </View>
+
+                <Text style={styles.fieldLabel}>FROM / DE</Text>
+                <Text style={styles.cityText}>{from}</Text>
+                <Text style={styles.changeText}>Change</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.swapButton}
+                onPress={swapLocations}
+              >
+                <Text style={styles.swapText}>⇄</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.locationCard}
+                onPress={() => setShowTo(true)}
+              >
+                <View style={styles.locationIconDark}>
+                  <Text style={styles.locationPin}>●</Text>
+                </View>
+
+                <Text style={styles.fieldLabel}>TO / À</Text>
+                <Text style={styles.cityText}>{to}</Text>
+                <Text style={styles.changeText}>Change</Text>
+              </Pressable>
+            </View>
+
+            {/* DATE + PASSENGERS */}
+            <View style={styles.optionsRow}>
+              <Pressable
+                style={styles.optionCard}
+                onPress={() => setShowDate(true)}
+              >
+                <View style={styles.optionIcon}>
+                  <Text>📅</Text>
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>DATE</Text>
+                  <Text style={styles.optionValue}>
+                    {travelDate}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <View style={styles.optionCard}>
+                <View style={styles.optionIcon}>
+                  <Text>👥</Text>
+                </View>
+
+                <View style={styles.passengerInfo}>
+                  <Text style={styles.fieldLabel}>PASSENGERS</Text>
+
+                  <View style={styles.passengerRow}>
+                    <Pressable
+                      style={styles.counterButton}
+                      onPress={() =>
+                        setPassengers((value) =>
+                          Math.max(1, value - 1)
+                        )
+                      }
+                    >
+                      <Text style={styles.counterText}>−</Text>
+                    </Pressable>
+
+                    <Text style={styles.passengerNumber}>
+                      {passengers}
+                    </Text>
+
+                    <Pressable
+                      style={styles.counterButton}
+                      onPress={() =>
+                        setPassengers((value) =>
+                          Math.min(10, value + 1)
+                        )
+                      }
+                    >
+                      <Text style={styles.counterText}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* SEARCH BUTTON */}
+            <Pressable
+              style={styles.searchButton}
+              onPress={handleSearch}
+            >
+              <Text style={styles.searchButtonText}>
+                SEARCH TRIPS
+              </Text>
+              <Text style={styles.searchArrow}>→</Text>
+            </Pressable>
+          </View>
 
           {/* SERVICES */}
           <View style={styles.servicesHeader}>
-            <View>
-              <Text style={styles.sectionHeading}>Your GodSpeed</Text>
-              <Text style={styles.sectionFrench}>
-                Votre espace voyage
-              </Text>
-            </View>
+            <Text style={styles.sectionHeading}>Our Services</Text>
+            <Text style={styles.sectionFrench}>
+              Nos services
+            </Text>
           </View>
 
           <View style={styles.servicesGrid}>
             <ServiceCard
-  icon="🎟️"
-  title="My Tickets"
-  subtitle="Mes billets"
-  onPress={() => router.push('/tickets')}
-/>
+              icon="🎫"
+              title="Tickets"
+              subtitle="My bookings"
+              onPress={() => router.push('/tickets')}
+            />
 
-<ServiceCard
-  icon="📍"
-  title="Track My Bus"
-  subtitle="Suivre mon bus"
-  onPress={() => router.push('/tracking')}
-/>
+            <ServiceCard
+              icon="📍"
+              title="Track Bus"
+              subtitle="Track your journey"
+              onPress={() => router.push('/tracking')}
+            />
 
-<ServiceCard 
-  icon="📦" 
-  title="Send a Parcel" 
-  subtitle="Envoyer un colis" 
-  onPress={() => router.push('/parcel-trips')} 
-/>
+            <ServiceCard
+              icon="📦"
+              title="Parcel"
+              subtitle="Send a parcel"
+              onPress={() => router.push('/parcel')}
+            />
 
-<ServiceCard
-  icon="🧳"
-  title="My Luggage"
-  subtitle="Mes bagages"
-  onPress={() => router.push('/luggage')}
-/>
+            <ServiceCard
+              icon="🧳"
+              title="Luggage"
+              subtitle="Manage luggage"
+              onPress={() => router.push('/luggage')}
+            />
           </View>
 
           {/* SUPPORT */}
-        <Pressable
-  style={styles.supportCard}
-  onPress={() => router.push('/support')}
->
+          <Pressable
+            style={styles.supportCard}
+            onPress={() => router.push('/support')}
+          >
             <View style={styles.supportIcon}>
               <Text style={styles.supportEmoji}>💬</Text>
             </View>
 
             <View style={styles.supportTextContainer}>
               <Text style={styles.supportTitle}>
-                Customer Support
+                Need help?
               </Text>
 
               <Text style={styles.supportFrench}>
-                Assistance clientèle
+                Besoin d'aide ?
               </Text>
 
               <Text style={styles.supportDescription}>
-                We're here to help you.
+                Our support team is here for you.
               </Text>
             </View>
 
@@ -188,175 +282,172 @@ const [showDate, setShowDate] = useState(false);
           <View style={styles.bottomSpace} />
         </ScrollView>
 
-        {/* BOTTOM NAVIGATION */}
+        {/* BOTTOM NAV */}
         <View style={styles.bottomNav}>
-         <NavItem
-  icon="⌂"
-  label="Home"
-  active
-  onPress={() => router.push('/')}
-/>
-
-<NavItem
-  icon="🚌"
-  label="Trips"
-  onPress={() => router.push('/trips')}
-/>
-
-<NavItem
-  icon="🎟"
-  label="Tickets"
-  onPress={() => router.push('/tickets')}
-/>
-
-          <Pressable
-            style={styles.navItem}
-            onPress={() => setShowMore(true)}
-          >
-            <View style={styles.navIconBox}>
-              <Text style={styles.navIcon}>☰</Text>
-            </View>
-
-            <Text style={styles.navLabel}>More</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* FROM LOCATION MODAL */}
-      <LocationModal
-        visible={showFrom}
-        title="Departure"
-        french="Point de départ"
-        selected={from}
-        onClose={() => setShowFrom(false)}
-        onSelect={(city) => {
-          setFrom(city);
-          setShowFrom(false);
-        }}
-      />
-
-      {/* TO LOCATION MODAL */}
-      <LocationModal
-        visible={showTo}
-        title="Destination"
-        french="Destination"
-        selected={to}
-        onClose={() => setShowTo(false)}
-        onSelect={(city) => {
-          setTo(city);
-          setShowTo(false);
-        }}
-      />
-{/* DATE MODAL */}
-<DateModal
-  visible={showDate}
-  selected={travelDate}
-  onClose={() => setShowDate(false)}
-  onSelect={(date) => {
-    setTravelDate(date);
-    setShowDate(false);
-  }}
-/>
-      {/* MORE MENU */}
-      <Modal
-        visible={showMore}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowMore(false)}
-      >
-        <View style={styles.moreOverlay}>
-          <Pressable
-            style={styles.moreBackdrop}
-            onPress={() => setShowMore(false)}
+          <NavItem
+            icon="⌂"
+            label="Home"
+            active
+            onPress={() => router.replace('/')}
           />
 
-          <View style={styles.moreSheet}>
-            <View style={styles.sheetHandle} />
+          <NavItem
+            icon="🎫"
+            label="Tickets"
+            onPress={() => router.push('/tickets')}
+          />
 
-            <View style={styles.moreHeader}>
-              <View>
-                <Text style={styles.moreTitle}>More</Text>
-                <Text style={styles.moreFrench}>
-                  Plus de services
-                </Text>
+          <NavItem
+            icon="📍"
+            label="Track"
+            onPress={() => router.push('/tracking')}
+          />
+
+          <NavItem
+            icon="☰"
+            label="More"
+            onPress={() => setShowMore(true)}
+          />
+        </View>
+
+        {/* FROM LOCATION MODAL */}
+        <LocationModal
+          visible={showFrom}
+          title="Departure"
+          french="Point de départ"
+          selected={from}
+          onClose={() => setShowFrom(false)}
+          onSelect={(city) => {
+            setFrom(city);
+            setShowFrom(false);
+          }}
+        />
+
+        {/* TO LOCATION MODAL */}
+        <LocationModal
+          visible={showTo}
+          title="Destination"
+          french="Destination"
+          selected={to}
+          onClose={() => setShowTo(false)}
+          onSelect={(city) => {
+            setTo(city);
+            setShowTo(false);
+          }}
+        />
+
+        {/* DATE MODAL */}
+        <DateModal
+          visible={showDate}
+          selected={travelDate}
+          onClose={() => setShowDate(false)}
+          onSelect={(date) => {
+            setTravelDate(date);
+            setShowDate(false);
+          }}
+        />
+
+        {/* MORE MODAL */}
+        <Modal
+          visible={showMore}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowMore(false)}
+        >
+          <View style={styles.moreOverlay}>
+            <Pressable
+              style={styles.moreBackdrop}
+              onPress={() => setShowMore(false)}
+            />
+
+            <View style={styles.moreSheet}>
+              <View style={styles.sheetHandle} />
+
+              <View style={styles.moreHeader}>
+                <View>
+                  <Text style={styles.moreTitle}>More</Text>
+                  <Text style={styles.moreFrench}>
+                    Plus de services
+                  </Text>
+                </View>
+
+                <Pressable
+                  style={styles.closeButton}
+                  onPress={() => setShowMore(false)}
+                >
+                  <Text style={styles.closeText}>×</Text>
+                </Pressable>
               </View>
 
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setShowMore(false)}
-              >
-                <Text style={styles.closeText}>×</Text>
-              </Pressable>
-            </View>
+              <View style={styles.moreGrid}>
+                <MoreItem
+                  icon="👤"
+                  title="My Profile"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/profile');
+                  }}
+                />
 
-<View style={styles.moreGrid}>
-  <MoreItem
-    icon="👤"
-    title="My Profile"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/profile');
-    }}
-  />
+                <MoreItem
+                  icon="💳"
+                  title="Payments"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/payments');
+                  }}
+                />
 
-  <MoreItem
-    icon="🧳"
-    title="Luggage"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/luggage');
-    }}
-  />
+                <MoreItem
+                  icon="🔔"
+                  title="Notifications"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/notifications');
+                  }}
+                />
 
-  <MoreItem
-    icon="💳"
-    title="Payments"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/payments');
-    }}
-  />
+                <MoreItem
+                  icon="⚙️"
+                  title="Settings"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/settings');
+                  }}
+                />
 
-  <MoreItem
-    icon="🔔"
-    title="Notifications"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/notifications');
-    }}
-  />
+                <MoreItem
+                  icon="💬"
+                  title="Support"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/support');
+                  }}
+                />
 
-  <MoreItem
-    icon="💬"
-    title="Support"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/support');
-    }}
-  />
+                <MoreItem
+                  icon="🎫"
+                  title="My Tickets"
+                  onPress={() => {
+                    setShowMore(false);
+                    router.push('/tickets');
+                  }}
+                />
+              </View>
 
-  <MoreItem
-    icon="⚙️"
-    title="Settings"
-    onPress={() => {
-      setShowMore(false);
-      router.push('/settings');
-    }}
-  />
-</View>
+              <View style={styles.moreFooter}>
+                <Text style={styles.moreFooterBrand}>
+                  GODSPEED MOBILITY
+                </Text>
 
-            <View style={styles.moreFooter}>
-              <Text style={styles.moreFooterBrand}>
-                GODSPEED MOBILITY
-              </Text>
-
-              <Text style={styles.moreFooterText}>
-                Safe journeys. Better connections.
-              </Text>
+                <Text style={styles.moreFooterText}>
+                  Comfortable • Safe • On Time
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </View>
     </SafeAreaView>
   );
 }
@@ -481,7 +572,8 @@ function LocationModal({
               key={city}
               style={[
                 styles.cityOption,
-                selected === city && styles.cityOptionSelected,
+                selected === city &&
+                  styles.cityOptionSelected,
               ]}
               onPress={() => onSelect(city)}
             >
@@ -513,6 +605,9 @@ function LocationModal({
     </Modal>
   );
 }
+
+/* DATE MODAL */
+
 function DateModal({
   visible,
   selected,
@@ -525,92 +620,139 @@ function DateModal({
   onSelect: (date: string) => void;
 }) {
   const dates = [
-    { value: '2026-09-14', label: 'Today', french: "Aujourd'hui" },
-    { value: '2026-09-15', label: 'Tomorrow', french: 'Demain' },
-    { value: '2026-09-16', label: 'Wednesday, Sep 16', french: 'Mercredi 16 sept.' },
-    { value: '2026-09-17', label: 'Thursday, Sep 17', french: 'Jeudi 17 sept.' },
-    { value: '2026-09-18', label: 'Friday, Sep 18', french: 'Vendredi 18 sept.' },
+    {
+      value: '2026-09-14',
+      label: 'Today',
+      french: "Aujourd'hui",
+    },
+    {
+      value: '2026-09-15',
+      label: 'Tomorrow',
+      french: 'Demain',
+    },
+    {
+      value: '2026-09-16',
+      label: 'Wednesday, Sep 16',
+      french: 'Mercredi 16 sept.',
+    },
+    {
+      value: '2026-09-17',
+      label: 'Thursday, Sep 17',
+      french: 'Jeudi 17 sept.',
+    },
+    {
+      value: '2026-09-18',
+      label: 'Friday, Sep 18',
+      french: 'Vendredi 18 sept.',
+    },
   ];
 
   return (
     <Modal
-visible={visible}
-transparent
-animationType="slide"
-onRequestClose={onClose}
-
->
-
-  <View style={styles.locationModalOverlay}>
-    <View style={styles.locationSheet}>
-      <View style={styles.sheetHandle} />
-
-  <View style={styles.locationModalHeader}>
-    <View>
-      <Text style={styles.moreTitle}>Travel Date</Text>
-      <Text style={styles.moreFrench}>Date de voyage</Text>
-    </View>
-
-    <Pressable
-      style={styles.closeButton}
-      onPress={onClose}
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
     >
-      <Text style={styles.closeText}>×</Text>
-    </Pressable>
-  </View>
+      <View style={styles.locationModalOverlay}>
+        <View style={styles.locationSheet}>
+          <View style={styles.sheetHandle} />
 
-  <Text style={styles.chooseText}>
-    Choose your travel date
-  </Text>
+          <View style={styles.locationModalHeader}>
+            <View>
+              <Text style={styles.moreTitle}>
+                Travel Date
+              </Text>
 
-  <ScrollView
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={{ paddingBottom: 20 }}
-  >
-    {dates.map((date) => (
-      <Pressable
-        key={date.value}
-        style={[
-          styles.cityOption,
-          selected === date.value &&
-            styles.cityOptionSelected,
-        ]}
-        onPress={() => onSelect(date.value)}
-      >
-        <View style={styles.cityOptionIcon}>
-          <Text>📅</Text>
-        </View>
+              <Text style={styles.moreFrench}>
+                Date de voyage
+              </Text>
+            </View>
 
-        <View style={{ flex: 1 }}>
-          <Text
-            style={[
-              styles.cityOptionText,
-              selected === date.value &&
-                styles.cityOptionTextSelected,
-            ]}
+            <Pressable
+              style={styles.closeButton}
+              onPress={onClose}
+            >
+              <Text style={styles.closeText}>×</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.chooseText}>
+            Choose your travel date
+          </Text>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingBottom: 20,
+            }}
           >
-            {date.label}
-          </Text>
+            {dates.map((date) => (
+              <Pressable
+                key={date.value}
+                style={[
+                  styles.cityOption,
+                  selected === date.value &&
+                    styles.cityOptionSelected,
+                ]}
+                onPress={() => onSelect(date.value)}
+              >
+                <View style={styles.cityOptionIcon}>
+                  <Text>📅</Text>
+                </View>
 
-          <Text style={styles.moreFrench}>
-            {date.french}
-          </Text>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.cityOptionText,
+                      selected === date.value &&
+                        styles.cityOptionTextSelected,
+                    ]}
+                  >
+                    {date.label}
+                  </Text>
+
+                  <Text style={styles.moreFrench}>
+                    {date.french}
+                  </Text>
+                </View>
+
+                {selected === date.value && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
-
-        {selected === date.value && (
-          <Text style={styles.checkMark}>✓</Text>
-        )}
-      </Pressable>
-    ))}
-  </ScrollView>
-</View>
-
-
-  </View>
-</Modal>
-
+      </View>
+    </Modal>
   );
 }
+
+/* MORE ITEM */
+
+function MoreItem({
+  icon,
+  title,
+  onPress,
+}: {
+  icon: string;
+  title: string;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable style={styles.moreItem} onPress={onPress}>
+      <View style={styles.moreItemIcon}>
+        <Text style={styles.moreItemEmoji}>{icon}</Text>
+      </View>
+
+      <Text style={styles.moreItemTitle}>{title}</Text>
+    </Pressable>
+  );
+}
+
+/* STYLES */
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -635,9 +777,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
-brand: { fontSize: 20, fontWeight: '900',
-   letterSpacing: 1.2, color: '#0B1F3A', 
-   includeFontPadding: false, },
+
+  brand: {
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: '#0B1F3A',
+    includeFontPadding: false,
+  },
 
   brandSub: {
     fontSize: 9,
@@ -671,10 +818,10 @@ brand: { fontSize: 20, fontWeight: '900',
     alignItems: 'center',
   },
 
-heroOverlay: {
-  ...StyleSheet.absoluteFill,
-  backgroundColor: 'rgba(11, 31, 58, 0.28)',
-  zIndex: 2,
+  heroOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(11, 31, 58, 0.28)',
+    zIndex: 2,
   },
 
   heroText: {
@@ -708,10 +855,10 @@ heroOverlay: {
   },
 
   busImage: {
-  ...StyleSheet.absoluteFill,
-  width: '100%',
-  height: '100%',
-},
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
 
   heroBottom: {
     position: 'absolute',
@@ -1298,25 +1445,3 @@ heroOverlay: {
     marginTop: 8,
   },
 });
-
-/* MORE ITEM */
-
-function MoreItem({
-  icon,
-  title,
-  onPress,
-}: {
-  icon: string;
-  title: string;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable style={styles.moreItem} onPress={onPress}>
-      <View style={styles.moreItemIcon}>
-        <Text style={styles.moreItemEmoji}>{icon}</Text>
-      </View>
-
-      <Text style={styles.moreItemTitle}>{title}</Text>
-    </Pressable>
-  );
-}

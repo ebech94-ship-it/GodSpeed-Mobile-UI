@@ -3,16 +3,16 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -92,6 +92,9 @@ export default function CreateAccountScreen() {
       router.replace('/verification');
 
     } catch (error: any) {
+    console.log('🔥 SIGNUP ERROR CODE:', error?.code);
+  console.log('🔥 SIGNUP ERROR MESSAGE:', error?.message);
+  console.log('🔥 SIGNUP ERROR:', error);
       let message =
         'Unable to create your account. Please try again.';
 
