@@ -15,10 +15,11 @@ import {
 export default function TripsScreen() {
   const router = useRouter();
 
-  const { from, to, passengers } =
+  const { from, to, date, passengers } =
     useLocalSearchParams<{
       from?: string;
       to?: string;
+      date?: string;
       passengers?: string;
     }>();
 
@@ -115,7 +116,8 @@ export default function TripsScreen() {
                   params: {
                     tripId: trip.id,
                     from: trip.from,
-to: trip.to,
+                    to: trip.to,
+                    date: date || '',
                     passengers: passengerCount,
                     
                   },

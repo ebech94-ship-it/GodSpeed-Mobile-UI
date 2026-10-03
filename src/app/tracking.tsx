@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import {useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Pressable,
   SafeAreaView,
@@ -32,6 +32,13 @@ const ACTIVE_TRIP: BusTrip | null = {
 export default function TrackingScreen() {
   const router = useRouter();
 
+const { type } = useLocalSearchParams<{
+  type?: 'bus' | 'parcel';
+}>();
+
+const trackingType = type || 'bus';
+const isParcel = trackingType === 'parcel';
+
   const trip = ACTIVE_TRIP;
 
   return (
@@ -46,13 +53,15 @@ export default function TrackingScreen() {
             <Text style={styles.backIcon}>‹</Text>
           </Pressable>
 
-          <Text style={styles.headerTitle}>Track My Bus</Text>
+        <Text style={styles.headerTitle}>
+  {isParcel ? 'Track My Parcel' : 'Track My Bus'}
+</Text>
 
           <View style={styles.headerSpacer} />
         </View>
 
         {!trip ? (
-          <EmptyTracking />
+         <EmptyTracking isParcel={isParcel} />
         ) : (
           <>
             {/* Status */}
@@ -147,20 +156,23 @@ export default function TrackingScreen() {
   );
 }
 
-function EmptyTracking() {
+function EmptyTracking({ isParcel }: { isParcel: boolean }) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIcon}>
-        <Text style={styles.emptyBus}>🚌</Text>
+        <Text style={styles.emptyBus}>
+          {isParcel ? '📦' : '🚌'}
+        </Text>
       </View>
 
       <Text style={styles.emptyTitle}>
-        No active trip
+        {isParcel ? 'No active parcel' : 'No active trip'}
       </Text>
 
       <Text style={styles.emptyText}>
-        When you have an active journey, your bus location and
-        arrival information will appear here.
+        {isParcel
+          ? 'When you have an active parcel, its current location and delivery information will appear here.'
+          : 'When you have an active journey, your bus location and arrival information will appear here.'}
       </Text>
     </View>
   );

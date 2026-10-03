@@ -19,6 +19,7 @@ export default function TicketScreen() {
      tripId,
     from,
     to,
+    date,
     passengers,
     departure,
     arrival,
@@ -32,6 +33,7 @@ export default function TicketScreen() {
     tripId?: string;
     from?: string;
     to?: string;
+    date?: string;
     passengers?: string;
     departure?: string;
     arrival?: string;
@@ -154,7 +156,7 @@ const arrivalTime = trip?.arrival || arrival || '13:00';
               <View>
                 <Text style={styles.smallLabel}>DEPARTURE</Text>
                 <Text style={styles.dateValue}>
-  {trip?.date || 'Scheduled Trip'}
+  {date || trip?.date || 'Scheduled Trip'}
 </Text>
               </View>
 
@@ -347,6 +349,7 @@ const arrivalTime = trip?.arrival || arrival || '13:00';
           bookingReference: reference,
           from: departureCity,
           to: destinationCity,
+          date: date || '',
           passengers: passengers || '1',
           departure: departureTime,
           arrival: arrivalTime,

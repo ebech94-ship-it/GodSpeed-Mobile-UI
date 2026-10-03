@@ -18,6 +18,7 @@ export default function ReceiptScreen() {
     bookingReference,
     from,
     to,
+    date,
     passengers,
     departure,
     arrival,
@@ -30,6 +31,7 @@ export default function ReceiptScreen() {
     bookingReference?: string;
     from?: string;
     to?: string;
+    date?: string;
     passengers?: string;
     departure?: string;
     arrival?: string;
@@ -186,6 +188,10 @@ export default function ReceiptScreen() {
               label="Route"
               value={`${departureCity} → ${destinationCity}`}
             />
+            <ReceiptRow
+  label="Travel date"
+  value={date || 'Scheduled Trip'}
+           />
 
             <ReceiptRow
               label="Departure"

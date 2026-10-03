@@ -19,9 +19,11 @@ export default function BookingScreen() {
 
  const {
   tripId,
+  date,
   passengers,
 } = useLocalSearchParams<{
   tripId?: string;
+   date?: string;
   passengers?: string;
 }>();
 
@@ -263,6 +265,7 @@ const tripPrice = trip?.price ?? 0;
         tripId: tripId || '',
         from: trip?.from || 'Kumba',
         to: trip?.to || 'Yaoundé',
+         date: date || '',
         passengers: passengerCount.toString(),
         departure: trip?.departure || '06:30',
         arrival: trip?.arrival || '13:00',

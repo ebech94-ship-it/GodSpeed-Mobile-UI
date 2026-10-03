@@ -1,15 +1,20 @@
 import { useAuth } from '@/auth/AuthContext';
+import * as Contacts from 'expo-contacts';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
+
 import {
+  Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  TextInput,
+  View
 } from 'react-native';
 
 const ROUTES = ['Kumba', 'Yaoundé'];
@@ -23,9 +28,15 @@ export default function HomeScreen() {
   const [showFrom, setShowFrom] = useState(false);
   const [showTo, setShowTo] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [showCall, setShowCall] = useState(false);
   const [passengers, setPassengers] = useState(1);
   const [travelDate, setTravelDate] = useState('2026-09-14');
   const [showDate, setShowDate] = useState(false);
+
+const [callMode, setCallMode] = useState<'main' | 'family'>('main');
+const [phoneNumber, setPhoneNumber] = useState('');
+const [contacts, setContacts] = useState<any[]>([]);
+
 
   if (loading) {
     return null;
@@ -40,6 +51,25 @@ export default function HomeScreen() {
     setFrom(to);
     setTo(oldFrom);
   };
+
+
+const openPhoneContacts = async () => {
+  const { status } = await Contacts.requestPermissionsAsync();
+
+  if (status !== 'granted') {
+    Alert.alert(
+      'Contacts Permission',
+      'Please allow contact access to choose a family member or loved one.'
+    );
+    return;
+  }
+
+  const result = await Contacts.getContactsAsync({
+    fields: [Contacts.Fields.PhoneNumbers],
+  });
+
+  setContacts(result.data);
+};
 
   const handleSearch = () => {
     router.push({
@@ -226,7 +256,7 @@ export default function HomeScreen() {
           <View style={styles.servicesGrid}>
             <ServiceCard
               icon="🎫"
-              title="Tickets"
+              title="My Tickets"
               subtitle="My bookings"
               onPress={() => router.push('/tickets')}
             />
@@ -235,22 +265,30 @@ export default function HomeScreen() {
               icon="📍"
               title="Track Bus"
               subtitle="Track your journey"
-              onPress={() => router.push('/tracking')}
+              onPress={() => router.push({
+  pathname: '/tracking',
+  params: { type: 'bus' },
+})}
             />
 
             <ServiceCard
-              icon="📦"
-              title="Parcel"
-              subtitle="Send a parcel"
-              onPress={() => router.push('/parcel')}
-            />
+  icon="🧳"
+  title="Parcel"
+  subtitle="Send a parcel"
+  onPress={() => router.push('/parcel')}
+/>
 
             <ServiceCard
-              icon="🧳"
-              title="Luggage"
-              subtitle="Manage luggage"
-              onPress={() => router.push('/luggage')}
-            />
+  icon="🧳"
+  title="Track Parcel"
+  subtitle="Track your parcel"
+  onPress={() =>
+    router.push({
+      pathname: '/tracking',
+      params: { type: 'parcel' },
+    })
+  }
+/>
           </View>
 
           {/* SUPPORT */}
@@ -290,18 +328,20 @@ export default function HomeScreen() {
             active
             onPress={() => router.replace('/')}
           />
+<NavItem
+  icon="📞"
+  label="Call"
+  onPress={() => setShowCall(true)}
+/>
+
 
           <NavItem
-            icon="🎫"
-            label="Tickets"
-            onPress={() => router.push('/tickets')}
-          />
+  icon="👤"
+  label="Profile"
+  onPress={() => router.push('/profile')}
+/>
 
-          <NavItem
-            icon="📍"
-            label="Track"
-            onPress={() => router.push('/tracking')}
-          />
+          
 
           <NavItem
             icon="☰"
@@ -380,14 +420,7 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.moreGrid}>
-                <MoreItem
-                  icon="👤"
-                  title="My Profile"
-                  onPress={() => {
-                    setShowMore(false);
-                    router.push('/profile');
-                  }}
-                />
+                
 
                 <MoreItem
                   icon="💳"
@@ -418,21 +451,14 @@ export default function HomeScreen() {
 
                 <MoreItem
                   icon="💬"
-                  title="Support"
+                  title="Support & Requests"
                   onPress={() => {
                     setShowMore(false);
                     router.push('/support');
                   }}
                 />
 
-                <MoreItem
-                  icon="🎫"
-                  title="My Tickets"
-                  onPress={() => {
-                    setShowMore(false);
-                    router.push('/tickets');
-                  }}
-                />
+                
               </View>
 
               <View style={styles.moreFooter}>
@@ -447,6 +473,253 @@ export default function HomeScreen() {
             </View>
           </View>
         </Modal>
+
+        
+        {/* CALL MODAL */}
+<Modal
+  visible={showCall}
+  transparent
+  animationType="slide"
+  onRequestClose={() => {
+    setShowCall(false);
+    setCallMode('main');
+  }}
+>
+  <View style={styles.moreOverlay}>
+    <Pressable
+      style={styles.moreBackdrop}
+      onPress={() => {
+        setShowCall(false);
+        setCallMode('main');
+      }}
+    />
+
+    <View style={styles.moreSheet}>
+      <View style={styles.sheetHandle} />
+
+      <View style={styles.moreHeader}>
+        <View>
+          <Text style={styles.moreTitle}>
+            Make a Call
+          </Text>
+
+          <Text style={styles.moreFrench}>
+            {callMode === 'main'
+              ? 'Qui souhaitez-vous contacter ?'
+              : 'Family / Loved One'}
+          </Text>
+        </View>
+
+        <Pressable
+          style={styles.closeButton}
+          onPress={() => {
+            setShowCall(false);
+            setCallMode('main');
+          }}
+        >
+          <Text style={styles.closeText}>×</Text>
+        </Pressable>
+      </View>
+
+      {callMode === 'main' ? (
+        <View style={styles.moreGrid}>
+
+          <MoreItem
+            icon="❤️"
+            title="Family / Loved One"
+            onPress={() => setCallMode('family')}
+          />
+
+          <MoreItem
+            icon="🚌"
+            title="My Operator"
+            onPress={() => {
+              Alert.alert(
+                'My Operator',
+                'Your booked operator contact will appear here automatically once your booking is confirmed.'
+              );
+            }}
+          />
+
+          <MoreItem
+            icon="🛟"
+            title="GodSpeed Support"
+            onPress={() => {
+              Alert.alert(
+                'GodSpeed Support',
+                'GodSpeed support contact will be loaded from the company settings.'
+              );
+            }}
+          />
+
+        </View>
+      ) : (
+        <View>
+
+          <Text style={styles.chooseText}>
+            Enter a phone number
+          </Text>
+
+          <TextInput
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            placeholder="e.g. 677123456"
+            keyboardType="phone-pad"
+            style={{
+              backgroundColor: '#F5F7FA',
+              borderRadius: 12,
+              paddingHorizontal: 15,
+              paddingVertical: 14,
+              fontSize: 16,
+              marginBottom: 12,
+            }}
+          />
+
+          <Pressable
+            style={styles.moreItem}
+            onPress={openPhoneContacts}
+          >
+            <View style={styles.moreItemIcon}>
+              <Text style={styles.moreItemEmoji}>👥</Text>
+            </View>
+
+            <Text style={styles.moreItemTitle}>
+              Choose from Contacts
+            </Text>
+          </Pressable>
+
+          {contacts.length > 0 && (
+            <ScrollView
+              style={{ maxHeight: 180 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {contacts
+                .filter((contact: any) =>
+            contact.phoneNumbers?.some(
+          (phone: any) => phone.number
+                  )
+                )
+                .map((contact: any) => {
+                  const number =
+                    contact.phoneNumbers?.[0]?.number || '';
+
+                  return (
+                    <Pressable
+                      key={contact.id}
+                      style={styles.cityOption}
+                      onPress={() => {
+                        setPhoneNumber(number);
+                        setContacts([]);
+                      }}
+                    >
+                      <View style={styles.cityOptionIcon}>
+                        <Text>👤</Text>
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cityOptionText}>
+                          {contact.name}
+                        </Text>
+
+                        <Text style={styles.moreFrench}>
+                          {number}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+            </ScrollView>
+          )}
+
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 10,
+              marginTop: 15,
+            }}
+          >
+            <Pressable
+              style={[
+                styles.moreItem,
+                { flex: 1 },
+              ]}
+              onPress={() => {
+                if (!phoneNumber.trim()) {
+                  Alert.alert(
+                    'Phone Number',
+                    'Please enter or select a phone number.'
+                  );
+                  return;
+                }
+
+                Linking.openURL(`tel:${phoneNumber}`);
+              }}
+            >
+              <Text style={styles.moreItemEmoji}>📞</Text>
+              <Text style={styles.moreItemTitle}>
+                Call
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.moreItem,
+                { flex: 1 },
+              ]}
+              onPress={() => {
+                if (!phoneNumber.trim()) {
+                  Alert.alert(
+                    'Phone Number',
+                    'Please enter or select a phone number.'
+                  );
+                  return;
+                }
+
+                const cleanNumber =
+                  phoneNumber.replace(/[^\d+]/g, '');
+
+                Linking.openURL(
+                  `whatsapp://send?phone=${cleanNumber}`
+                );
+              }}
+            >
+              <Text style={styles.moreItemEmoji}>💬</Text>
+              <Text style={styles.moreItemTitle}>
+                WhatsApp
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={{ marginTop: 15 }}
+            onPress={() => setCallMode('main')}
+          >
+            <Text
+              style={{
+                textAlign: 'center',
+                fontWeight: '700',
+              }}
+            >
+              ← Back
+            </Text>
+          </Pressable>
+
+        </View>
+      )}
+
+      <View style={styles.moreFooter}>
+        <Text style={styles.moreFooterBrand}>
+          GODSPEED MOBILITY
+        </Text>
+
+        <Text style={styles.moreFooterText}>
+          Stay connected while you travel
+        </Text>
+      </View>
+    </View>
+  </View>
+</Modal>
+
       </View>
     </SafeAreaView>
   );
@@ -619,33 +892,39 @@ function DateModal({
   onClose: () => void;
   onSelect: (date: string) => void;
 }) {
-  const dates = [
-    {
-      value: '2026-09-14',
-      label: 'Today',
-      french: "Aujourd'hui",
-    },
-    {
-      value: '2026-09-15',
-      label: 'Tomorrow',
-      french: 'Demain',
-    },
-    {
-      value: '2026-09-16',
-      label: 'Wednesday, Sep 16',
-      french: 'Mercredi 16 sept.',
-    },
-    {
-      value: '2026-09-17',
-      label: 'Thursday, Sep 17',
-      french: 'Jeudi 17 sept.',
-    },
-    {
-      value: '2026-09-18',
-      label: 'Friday, Sep 18',
-      french: 'Vendredi 18 sept.',
-    },
+
+  const dates = Array.from({ length: 7 }, (_, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() + index);
+
+  const value = date.toISOString().split('T')[0];
+
+  const labels = [
+    'Today',
+    'Tomorrow',
+    date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    }),
   ];
+
+  const frenchLabels = [
+    "Aujourd'hui",
+    'Demain',
+    date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+    }),
+  ];
+
+  return {
+    value,
+    label: index < 2 ? labels[index] : labels[2],
+    french: index < 2 ? frenchLabels[index] : frenchLabels[2],
+  };
+});
 
   return (
     <Modal

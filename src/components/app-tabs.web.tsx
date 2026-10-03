@@ -20,7 +20,7 @@ export default function AppTabs() {
       <Stack.Screen name="profile" />
       <Stack.Screen name="tracking" />
       <Stack.Screen name="parcel" />
-      <Stack.Screen name="luggage" />
+   
       <Stack.Screen name="payments" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="support" />

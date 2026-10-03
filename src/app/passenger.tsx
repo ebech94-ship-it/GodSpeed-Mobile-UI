@@ -18,6 +18,7 @@ export default function PassengerScreen() {
       tripId,
     from,
     to,
+     date,
     passengers,
     departure,
     arrival,
@@ -28,6 +29,7 @@ export default function PassengerScreen() {
   tripId?: string;
     from?: string;
     to?: string;
+    date?: string;
     passengers?: string;
     departure?: string;
     arrival?: string;
@@ -184,6 +186,7 @@ export default function PassengerScreen() {
                 tripId: tripId || '',
                   from: from || 'Kumba',
                   to: to || 'Yaoundé',
+                  date: date || '',
                   passengers: passengerCount.toString(),
                   departure: departure || '06:30',
                   arrival: arrival || '13:00',

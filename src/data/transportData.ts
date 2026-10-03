@@ -37,6 +37,7 @@ export type MobilityLocation = {
   country: string;
   countryCode: string;
   region?: string;
+  active?: boolean;
 };
 
 export const LOCATIONS: MobilityLocation[] = [
@@ -586,6 +587,7 @@ export const ROUTES: MobilityRoute[] = [
     toLocationId: 'sarh',
   },
 ];
+
 export type Seat = {
   id: string;
   row: number;
@@ -597,33 +599,70 @@ export type Vehicle = {
   id: string;
   operatorId: string;
   name: string;
-   image: any;
+  image: any;
+  plateNumber?: string;
+  vehicleType?: string;
   capacity: number;
   seatLayout: Seat[];
+  amenities?: string[];
+  active?: boolean;
 };
 
 export type Operator = {
   id: string;
   name: string;
   displayName: string;
+  logo?: any;
+  phone?: string;
+  email?: string;
+  address?: string;
+  countryCode?: string;
+  verificationStatus?: 'pending' | 'verified' | 'suspended';
+  active?: boolean;
 };
 
 export type TransportTrip = {
   id: string;
   operatorId: string;
   vehicleId: string;
+  routeId?: string;
   from: string;
   to: string;
   departure: string;
   arrival: string;
   duration: string;
   price: number;
+  currency?: string;
   date: string;
-
-  // Seats already booked/occupied for THIS specific trip.
   occupiedSeats: string[];
+  status?: 'scheduled' | 'boarding' | 'departed' | 'completed' | 'cancelled';
+  bookingOpen?: boolean;
 };
 
+export type TransportBooking = {
+  id: string;
+  tripId: string;
+  operatorId: string;
+  passengerId: string;
+  passengerName: string;
+  passengerPhone: string;
+  seatId: string;
+  amount: number;
+  currency?: string;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  bookingStatus: 'reserved' | 'confirmed' | 'cancelled' | 'completed';
+  ticketNumber?: string;
+  qrCode?: string;
+  createdAt: string;
+};
+export type OperatorSettings = {
+  operatorId: string;
+  platformFee?: number;
+  currency?: string;
+  acceptedPaymentMethods?: string[];
+  cancellationAllowed?: boolean;
+  active?: boolean;
+};
 // ============================================================
 // OPERATORS
 // ============================================================
