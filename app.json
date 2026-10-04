@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "godspeed-mobility",
+    "name": "GS Mobility",
     "slug": "godspeed-mobility",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/splash-icon.png",
     "scheme": "godspeedmobility",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -17,18 +17,19 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ebeh.godspeedmobility"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/splash-icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+         "backgroundColor": "#06152B",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
@@ -37,6 +38,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "862a9ea1-a43e-47d4-8069-0fd525ea6029"
+      }
+    },
+    "owner": "ebeh",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/862a9ea1-a43e-47d4-8069-0fd525ea6029"
     }
   }
 }
