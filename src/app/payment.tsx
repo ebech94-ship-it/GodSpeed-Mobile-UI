@@ -18,8 +18,9 @@ export default function PaymentScreen() {
 
   const {
   tripId,
+   operatorId,
     from,
-    to,
+      to,
       date,
     passengers,
     departure,
@@ -31,6 +32,7 @@ export default function PaymentScreen() {
     phone,
   } = useLocalSearchParams<{
    tripId?: string;
+   operatorId?: string;
     from?: string;
     to?: string;
     date?: string;
@@ -72,6 +74,7 @@ export default function PaymentScreen() {
       pathname: '/confirmation',
       params: {
        tripId: tripId || '',
+        operatorId: operatorId || '',
         from: from || 'Kumba',
         to: to || 'Yaoundé',
         date: date || '',

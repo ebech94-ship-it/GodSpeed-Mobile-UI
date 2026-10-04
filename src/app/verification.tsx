@@ -263,7 +263,11 @@ export default function VerificationScreen() {
             submittedAt: serverTimestamp(),
           },
           accountStatus: 'active',
-          updatedAt: serverTimestamp(),
+identity: {
+  verified: true,
+  verifiedAt: serverTimestamp(),
+},
+updatedAt: serverTimestamp(),
         }
       );
 

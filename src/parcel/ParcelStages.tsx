@@ -20,6 +20,8 @@ type Props = {
   paymentMethod: PaymentMethod;
   setPaymentMethod: (value: PaymentMethod) => void;
   reference: string;
+    parcelId?: string;
+  onTrackParcel?: () => void;
   onContinueToPayment: () => void;
   onEdit: () => void;
   onPayment: () => void;
@@ -31,7 +33,7 @@ export default function ParcelStages({
   stage, paid, trip, operator, vehicle, demoSender, demoTripContact,
   destination, parcelType, contents, receiverName, receiverPhone, parcelFee,
   paymentMethod, setPaymentMethod, reference, onContinueToPayment, onEdit,
-  onPayment, onShare, onCallTripContact,
+  onPayment, onShare, onTrackParcel, onCallTripContact,
 }: Props) {
   return (
     <>
@@ -437,7 +439,21 @@ export default function ParcelStages({
                   </Text>
                 </Pressable>
               </View>
+                            {onTrackParcel && (
+                <Pressable
+                  style={styles.trackButton}
+                  onPress={onTrackParcel}
+                >
+                  <Text style={styles.trackButtonText}>
+                    TRACK THIS PARCEL
+                  </Text>
 
+                  <Text style={styles.trackButtonArrow}>
+                    →
+                  </Text>
+                </Pressable>
+              )}
+              
               <View style={styles.receiptNote}>
                 <Text style={styles.receiptNoteText}>
                   Keep this receipt as proof of payment for
@@ -941,5 +957,27 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 14,
     color: '#63748A',
+  },
+    trackButton: {
+    height: 52,
+    marginTop: 10,
+    borderRadius: 15,
+    backgroundColor: '#1976D2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  trackButtonText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+  },
+
+  trackButtonArrow: {
+    color: '#B9DBFF',
+    fontSize: 19,
+    marginLeft: 10,
   },
 });

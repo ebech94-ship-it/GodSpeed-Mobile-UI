@@ -1,11 +1,11 @@
-import {
-  getOperator,
-  getTrip,
-  getVehicle,
-} from '@/data/transportData';
+
+import { useAuth } from '@/auth/AuthContext';
+import { getOperator, getTrip,  getVehicle,} from '@/data/transportData';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+
 import {
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -16,6 +16,7 @@ import {
 
 export default function BookingScreen() {
   const router = useRouter();
+const { profile } = useAuth();
 
  const {
   tripId,
@@ -258,23 +259,46 @@ const tripPrice = trip?.price ?? 0;
       styles.continueButtonDisabled,
   ]}
   disabled={selectedSeats.length !== passengerCount}
-  onPress={() => {
-    router.push({
-      pathname: '/passenger',
-      params: {
-        tripId: tripId || '',
-        from: trip?.from || 'Kumba',
-        to: trip?.to || 'Yaoundé',
-         date: date || '',
-        passengers: passengerCount.toString(),
-        departure: trip?.departure || '06:30',
-        arrival: trip?.arrival || '13:00',
-        price: tripPrice.toString(),
-        seats: selectedSeats.join(','),
-        total: totalPrice.toString(),
-      },
-    });
-  }}
+ onPress={() => {
+  if (
+    profile?.verification?.status !== 'verified' ||
+    profile?.identity?.verified !== true ||
+    profile?.accountStatus !== 'active'
+  ) {
+    Alert.alert(
+      'Identity Verification Required',
+      'Please complete your identity verification before continuing with a booking.',
+      [
+        {
+          text: 'Later',
+          style: 'cancel',
+        },
+        {
+          text: 'Verify Now',
+          onPress: () => router.push('/verification'),
+        },
+      ]
+    );
+    return;
+  }
+
+  router.push({
+    pathname: '/passenger',
+    params: {
+      tripId: tripId || '',
+      operatorId: trip?.operatorId || '',
+      from: trip?.from || 'Kumba',
+      to: trip?.to || 'Yaoundé',
+      date: date || '',
+      passengers: passengerCount.toString(),
+      departure: trip?.departure || '06:30',
+      arrival: trip?.arrival || '13:00',
+      price: tripPrice.toString(),
+      seats: selectedSeats.join(','),
+      total: totalPrice.toString(),
+    },
+  });
+}}
 >
   <Text style={styles.continueText}>
     {selectedSeats.length === passengerCount

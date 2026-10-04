@@ -1,7 +1,9 @@
 import { useAuth } from '@/auth/AuthContext';
+import { LOCATIONS, OPERATORS, } from '@/data/transportData';
 import * as Contacts from 'expo-contacts';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Alert,
@@ -9,7 +11,7 @@ import {
   Linking,
   Modal,
   Pressable,
-  SafeAreaView,
+ 
   ScrollView,
   StyleSheet,
   Text,
@@ -17,7 +19,7 @@ import {
   View
 } from 'react-native';
 
-const ROUTES = ['Kumba', 'Yaoundé'];
+
 
 export default function HomeScreen() {
   const { user, loading } = useAuth();
@@ -793,7 +795,6 @@ function NavItem({
     </Pressable>
   );
 }
-
 /* LOCATION MODAL */
 
 function LocationModal({
@@ -811,6 +812,34 @@ function LocationModal({
   onClose: () => void;
   onSelect: (city: string) => void;
 }) {
+  const [search, setSearch] = useState('');
+
+ const activeCountries = OPERATORS
+  .filter(
+    (operator) =>
+      operator.active !== false &&
+      operator.verificationStatus === 'verified' &&
+      operator.countryCode
+  )
+  .map((operator) => operator.countryCode);
+
+const availableLocations = LOCATIONS.filter(
+  (location) =>
+    activeCountries.includes(location.countryCode) &&
+    location.active !== false
+);
+
+  const filteredLocations = availableLocations.filter((location) => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return true;
+
+    return (
+      location.name.toLowerCase().includes(query) ||
+      location.region?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <Modal
       visible={visible}
@@ -840,35 +869,68 @@ function LocationModal({
             Choose a city
           </Text>
 
-          {ROUTES.map((city) => (
-            <Pressable
-              key={city}
-              style={[
-                styles.cityOption,
-                selected === city &&
-                  styles.cityOptionSelected,
-              ]}
-              onPress={() => onSelect(city)}
-            >
-              <View style={styles.cityOptionIcon}>
-                <Text>📍</Text>
-              </View>
+          {/* CITY SEARCH */}
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search city..."
+            placeholderTextColor="#8A96A6"
+            style={styles.citySearchInput}
+          />
 
-              <Text
+          {/* CITY LIST */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 420 }}
+            contentContainerStyle={{ paddingBottom: 10 }}
+          >
+            {filteredLocations.map((location) => (
+              <Pressable
+                key={location.id}
                 style={[
-                  styles.cityOptionText,
-                  selected === city &&
-                    styles.cityOptionTextSelected,
+                  styles.cityOption,
+                  selected === location.name &&
+                    styles.cityOptionSelected,
                 ]}
+                onPress={() => {
+                  onSelect(location.name);
+                  setSearch('');
+                }}
               >
-                {city}
-              </Text>
+                <View style={styles.cityOptionIcon}>
+                  <Text>📍</Text>
+                </View>
 
-              {selected === city && (
-                <Text style={styles.checkMark}>✓</Text>
-              )}
-            </Pressable>
-          ))}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.cityOptionText,
+                      selected === location.name &&
+                        styles.cityOptionTextSelected,
+                    ]}
+                  >
+                    {location.name}
+                  </Text>
+
+                  {location.region && (
+                    <Text style={styles.moreFrench}>
+                      {location.region}
+                    </Text>
+                  )}
+                </View>
+
+                {selected === location.name && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
+              </Pressable>
+            ))}
+
+            {filteredLocations.length === 0 && (
+              <Text style={styles.futureRoutes}>
+                No matching city found.
+              </Text>
+            )}
+          </ScrollView>
 
           <Text style={styles.futureRoutes}>
             More GodSpeed destinations coming soon.
@@ -878,7 +940,6 @@ function LocationModal({
     </Modal>
   );
 }
-
 /* DATE MODAL */
 
 function DateModal({
@@ -1468,7 +1529,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     right: 10,
-    bottom: 8,
+    bottom: 12,
     height: 68,
     backgroundColor: '#000000ff',
     borderRadius: 22,
@@ -1672,6 +1733,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
+  
+  citySearchInput: {
+  height: 48,
+  backgroundColor: '#FFFFFF',
+  borderRadius: 14,
+  paddingHorizontal: 14,
+  fontSize: 14,
+  color: '#172B4D',
+  borderWidth: 1,
+  borderColor: '#EDF0F4',
+  marginBottom: 12,
+},
 
   cityOption: {
     height: 62,

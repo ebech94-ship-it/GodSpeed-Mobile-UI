@@ -29,11 +29,12 @@
       [
         "expo-splash-screen",
         {
-         "backgroundColor": "#06152B",
+          "backgroundColor": "#06152B",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

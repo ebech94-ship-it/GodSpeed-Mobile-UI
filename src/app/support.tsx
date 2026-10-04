@@ -25,9 +25,9 @@ import {
 } from 'react-native';
 
 const DEFAULT_SUPPORT = {
-  phone: '+237673844413',
+  phone: '+237673864413',
   email: 'ebech@republic.beauty',
-  whatsapp: '+237673844413',
+  whatsapp: '+237673864413',
 };
 
 type RequestCategory =

@@ -1,14 +1,17 @@
 
+import { getOperator, getTrip } from '@/data/transportData';
+import * as Print from 'expo-print';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Sharing from 'expo-sharing';
 import {
-    Alert,
-    Image,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 export default function ReceiptScreen() {
@@ -16,6 +19,8 @@ export default function ReceiptScreen() {
 
   const {
     bookingReference,
+      tripId,
+    operatorId,
     from,
     to,
     date,
@@ -29,6 +34,8 @@ export default function ReceiptScreen() {
     paymentMethod,
   } = useLocalSearchParams<{
     bookingReference?: string;
+    tripId?: string;
+    operatorId?: string;
     from?: string;
     to?: string;
     date?: string;
@@ -41,6 +48,13 @@ export default function ReceiptScreen() {
     phone?: string;
     paymentMethod?: string;
   }>();
+
+const trip = tripId ? getTrip(tripId) : undefined;
+const operator = operatorId
+  ? getOperator(operatorId)
+  : trip
+    ? getOperator(trip.operatorId)
+    : undefined;
 
   const reference = bookingReference || 'GST-2026-000184';
   const passengerName = fullName || 'Passenger';
@@ -59,27 +73,85 @@ export default function ReceiptScreen() {
         ? 'Orange Money'
         : 'Bank Card';
 
-  const handleSave = () => {
-    Alert.alert(
-      'Save Receipt',
-      'Receipt saving will be connected to the device file system next.'
-    );
-  };
+  const receiptHtml = `
+  <html>
+    <body style="font-family: Arial; padding: 30px; color: #172033;">
+      <h1 style="color: #0B1F3A;">GODSPEED MOBILITY</h1>
+      <h2>PAYMENT RECEIPT</h2>
 
-  const handleShare = () => {
-    Alert.alert(
-      'Share Receipt',
-      'Receipt sharing will be connected to the device share system next.'
-    );
-  };
+      <p><strong>Booking reference:</strong> ${reference}</p>
+<p><strong>Operator:</strong> ${operator?.displayName || 'GodSpeed Voyage'}</p>
+<p><strong>Passenger:</strong> ${passengerName}</p>
+      <p><strong>Phone:</strong> ${phone || '—'}</p>
 
-  const handlePrint = () => {
-    Alert.alert(
-      'Print Receipt',
-      'Printing will be connected to the device printer service next.'
-    );
-  };
+      <hr />
 
+      <p><strong>Route:</strong> ${departureCity} → ${destinationCity}</p>
+      <p><strong>Date:</strong> ${date || 'Scheduled Trip'}</p>
+      <p><strong>Departure:</strong> ${departureTime}</p>
+      <p><strong>Arrival:</strong> ${arrivalTime}</p>
+      <p><strong>Seat(s):</strong> ${seatNumbers}</p>
+      <p><strong>Passengers:</strong> ${passengerCount}</p>
+
+      <hr />
+
+      <h2>TOTAL PAID: ${totalAmount.toLocaleString()} FCFA</h2>
+      <p><strong>Payment:</strong> ${paymentLabel}</p>
+      <p style="color: green;"><strong>PAID</strong></p>
+
+      <hr />
+
+      <p>Thank you for travelling with GodSpeed Mobility.</p>
+    </body>
+  </html>
+`;
+
+const createReceiptPdf = async () => {
+  const { uri } = await Print.printToFileAsync({
+    html: receiptHtml,
+  });
+
+  return uri;
+};
+
+const handleSave = async () => {
+  try {
+    const uri = await createReceiptPdf();
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Save GodSpeed Receipt',
+      });
+    }
+  } catch (error) {
+    Alert.alert('Receipt', 'Unable to save the receipt.');
+  }
+};
+
+const handleShare = async () => {
+  try {
+    const uri = await createReceiptPdf();
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share GodSpeed Receipt',
+      });
+    }
+  } catch (error) {
+    Alert.alert('Receipt', 'Unable to share the receipt.');
+  }
+};
+
+const handlePrint = async () => {
+  try {
+    const uri = await createReceiptPdf();
+    await Print.printAsync({ uri });
+  } catch (error) {
+    Alert.alert('Receipt', 'Unable to print the receipt.');
+  }
+};
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -188,6 +260,10 @@ export default function ReceiptScreen() {
               label="Route"
               value={`${departureCity} → ${destinationCity}`}
             />
+            <ReceiptRow
+  label="Operator"
+  value={operator?.displayName || 'GodSpeed Voyage'}
+/>
             <ReceiptRow
   label="Travel date"
   value={date || 'Scheduled Trip'}

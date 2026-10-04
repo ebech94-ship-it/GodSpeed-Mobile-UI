@@ -17,6 +17,7 @@ export default function TicketScreen() {
   const {
     bookingReference,
      tripId,
+      operatorId,
     from,
     to,
     date,
@@ -31,6 +32,7 @@ export default function TicketScreen() {
   } = useLocalSearchParams<{
     bookingReference?: string;
     tripId?: string;
+     operatorId?: string;
     from?: string;
     to?: string;
     date?: string;
@@ -46,8 +48,10 @@ export default function TicketScreen() {
 
   const totalAmount = Number(total || 0);
   const trip = tripId ? getTrip(tripId) : undefined;
-const vehicle = trip ? getVehicle(trip.vehicleId) : undefined;
-const operator = trip ? getOperator(trip.operatorId) : undefined;
+const vehicle = trip 
+? getVehicle(trip.vehicleId) : undefined;
+const operator = trip 
+? getOperator(trip.operatorId) : undefined;
 
   const paymentLabel =
     paymentMethod === 'mtn'
@@ -347,6 +351,7 @@ const arrivalTime = trip?.arrival || arrival || '13:00';
         pathname: '/receipt',
         params: {
           bookingReference: reference,
+            operatorId: operatorId || '',
           from: departureCity,
           to: destinationCity,
           date: date || '',

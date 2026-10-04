@@ -1,25 +1,74 @@
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+
 export type ParcelType = 'Document' | 'Package' | 'Other';
 
 export type ParcelTrip = {
-  from: string; to: string; date: string; departure: string; arrival: string;
+  id: string;
+  operatorId: string;
+  vehicleId: string;
+
+  from: string;
+  to: string;
+  date: string;
+  departure: string;
+  arrival: string;
 };
-export type ParcelOperator = { displayName?: string | null } | null;
-export type ParcelVehicle = { id?: string | null; name?: string | null } | null;
+
+export type ParcelOperator = {
+  id?: string | null;
+  displayName?: string | null;
+  name?: string | null;
+} | null;
+
+export type ParcelVehicle = {
+  id?: string | null;
+  name?: string | null;
+} | null;
 
 type Props = {
-  trip: ParcelTrip; operator: ParcelOperator; vehicle: ParcelVehicle;
+  trip: ParcelTrip;
+  operator: ParcelOperator;
+  vehicle: ParcelVehicle;
   from: string;
 
-setParcelFee: (value: number) => void;
-  demoSender: { name: string; phone: string };
-  demoTripContact: { role: string; phone: string };
-  receiverName: string; receiverPhone: string; destination: string;
-  parcelType: ParcelType; contents: string; parcelFee: number; canPreview: boolean;
-  setReceiverName: (value: string) => void; setReceiverPhone: (value: string) => void;
- setParcelType: (value: ParcelType) => void;
-  setContents: (value: string) => void; onCallTripContact: () => void; onReview: () => void;
+  setParcelFee: (value: number) => void;
+
+  demoSender: {
+    name: string;
+    phone: string;
+  };
+
+  demoTripContact: {
+    role: string;
+    phone: string;
+  };
+
+  receiverName: string;
+  receiverPhone: string;
+  destination: string;
+
+  parcelType: ParcelType;
+  contents: string;
+  parcelFee: number;
+  canPreview: boolean;
+
+  setReceiverName: (value: string) => void;
+  setReceiverPhone: (value: string) => void;
+  setParcelType: (value: ParcelType) => void;
+  setContents: (value: string) => void;
+
+  onCallTripContact: () => void;
+  onReview: () => void;
 };
+
 export default function ParcelForm({
   trip,
   operator,
@@ -28,24 +77,29 @@ export default function ParcelForm({
 
   demoSender,
   demoTripContact,
+
   receiverName,
   receiverPhone,
   destination,
+
   parcelType,
-  contents,  parcelFee,
+  contents,
+  parcelFee,
   canPreview,
-  
+
   setReceiverName,
   setReceiverPhone,
-
   setParcelType,
   setContents,
   setParcelFee,
+
   onCallTripContact,
   onReview,
 }: Props) {
-   
-   const calculateParcelFee = (origin: string, destination: string) => {
+  const calculateParcelFee = (
+    origin: string,
+    destination: string
+  ) => {
     if (origin === destination) return;
 
     if (
@@ -57,303 +111,347 @@ export default function ParcelForm({
       setParcelFee(2500);
     }
   };
-  
-  
-  
-  
-  
+
   return (
     <>
-              <View style={styles.hero}>
-                <View style={styles.heroIcon}>
-                  <Text style={styles.heroEmoji}>📦</Text>
-                </View>
+      {/* HERO */}
+      <View style={styles.hero}>
+        <View style={styles.heroIcon}>
+          <Text style={styles.heroEmoji}>📦</Text>
+        </View>
 
-                <Text style={styles.heroTitle}>
-                  Send it with confidence
-                </Text>
+        <Text style={styles.heroTitle}>
+          Send it with confidence
+        </Text>
 
-                <Text style={styles.heroText}>
-                  Send your parcel safely through a scheduled
-                  GodSpeed journey.
-                </Text>
-              </View>
+        <Text style={styles.heroText}>
+          Send your parcel safely through a scheduled
+          journey.
+        </Text>
+      </View>
 
-             {/* JOURNEY */}
-<Text style={styles.sectionTitle}>
-  Journey
-</Text>
-
-<View style={styles.journeyCard}>
-
-  <View style={styles.routeSide}>
-    <Text style={styles.smallLabel}>
-      FROM
-    </Text>
-
-    <Pressable
-      style={styles.routeSelector}
-     onPress={() => {}}
-    >
-      <Text style={styles.cityText}>
-        {from}
-      </Text>
-    </Pressable>
-
-    <Text style={styles.timeText}>
-      {trip.departure}
-    </Text>
-  </View>
-
-  <View style={styles.journeyMiddle}>
-    <Text style={styles.journeyArrow}>
-      →
-    </Text>
-
-    <Text style={styles.directText}>
-      Direct
-    </Text>
-  </View>
-
-  <View style={styles.destinationSide}>
-    <Text style={styles.smallLabel}>
-      TO
-    </Text>
-
-    <Pressable
-      style={styles.routeSelector}
-      onPress={() => {}}
-    >
-      <Text style={styles.cityText}>
-        {destination || trip.to}
-      </Text>
-    </Pressable>
-
-    <Text style={styles.timeText}>
-      {trip.arrival}
-    </Text>
-  </View>
-<View style={styles.journeyFee}>
-  <Text style={styles.journeyFeeLabel}>
-    ESTIMATED FEE
-  </Text>
-
-  <Text style={styles.journeyFeeAmount}>
-    {parcelFee.toLocaleString()} FCFA
-  </Text>
-</View>
-</View>
-
-              {/* TRANSPORT */}
-             {/* TRANSPORT */}
-<View style={styles.transportCard}>
-  <View style={styles.transportTop}>
-    <Image
-      source={require('../../assets/images/bus.png')}
-      style={styles.busImage}
-      resizeMode="contain"
-    />
-
-    <View style={styles.transportMain}>
-      <Text style={styles.transportOperator}>
-        {operator?.displayName || 'GodSpeed Voyage'}
+      {/* JOURNEY */}
+      <Text style={styles.sectionTitle}>
+        Journey
       </Text>
 
-      <Text style={styles.transportVehicle}>
-        Vehicle ID: {vehicle?.id || '—'}
+      <View style={styles.journeyCard}>
+        <View style={styles.routeSide}>
+          <Text style={styles.smallLabel}>
+            FROM
+          </Text>
+
+          <View style={styles.routeSelector}>
+            <Text style={styles.cityText}>
+              {from}
+            </Text>
+          </View>
+
+          <Text style={styles.timeText}>
+            {trip.departure}
+          </Text>
+        </View>
+
+        <View style={styles.journeyMiddle}>
+          <Text style={styles.journeyArrow}>
+            →
+          </Text>
+
+          <Text style={styles.directText}>
+            Direct
+          </Text>
+        </View>
+
+        <View style={styles.destinationSide}>
+          <Text style={styles.smallLabel}>
+            TO
+          </Text>
+
+          <View style={styles.routeSelector}>
+            <Text style={styles.cityText}>
+              {destination || trip.to}
+            </Text>
+          </View>
+
+          <Text style={styles.timeText}>
+            {trip.arrival}
+          </Text>
+        </View>
+
+        <View style={styles.journeyFee}>
+          <Text style={styles.journeyFeeLabel}>
+            ESTIMATED FEE
+          </Text>
+
+          <Text style={styles.journeyFeeAmount}>
+            {parcelFee.toLocaleString()} FCFA
+          </Text>
+        </View>
+      </View>
+
+      {/* TRANSPORT */}
+      <View style={styles.transportCard}>
+        <View style={styles.transportTop}>
+          <Image
+            source={require('../../assets/images/bus.png')}
+            style={styles.busImage}
+            resizeMode="contain"
+          />
+
+          <View style={styles.transportMain}>
+            <Text style={styles.transportOperator}>
+              {operator?.displayName ||
+                operator?.name ||
+                'Operator'}
+            </Text>
+
+            <Text style={styles.transportVehicle}>
+              {vehicle?.name || 'Vehicle'}
+            </Text>
+
+            <Text style={styles.transportId}>
+              Vehicle ID: {vehicle?.id || trip.vehicleId}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.transportDivider} />
+
+        <View style={styles.contactRow}>
+          <View>
+            <Text style={styles.smallLabel}>
+              TRIP CONTACT
+            </Text>
+
+            <Text style={styles.contactValue}>
+              {demoTripContact.phone ||
+                'Driver / attendant assigned later'}
+            </Text>
+          </View>
+
+          <Pressable
+            style={styles.callButton}
+            onPress={onCallTripContact}
+          >
+            <Text style={styles.callText}>
+              CALL
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* RECEIVER */}
+      <Text style={styles.sectionTitle}>
+        Receiver
       </Text>
-    </View>
-  </View>
 
-  <View style={styles.transportDivider} />
+      <View style={styles.formCard}>
+        <InputField
+          label="Receiver's name"
+          placeholder="Enter receiver's full name"
+          value={receiverName}
+          onChangeText={setReceiverName}
+        />
 
-  <View style={styles.contactRow}>
-    <View>
-      <Text style={styles.smallLabel}>
-        TRIP CONTACT
+        <InputField
+          label="Receiver's phone number"
+          placeholder="e.g. 6XXXXXXXX"
+          value={receiverPhone}
+          onChangeText={setReceiverPhone}
+          keyboardType="phone-pad"
+        />
+      </View>
+
+      {/* PARCEL */}
+      <Text style={styles.sectionTitle}>
+        Parcel
       </Text>
 
-      <Text style={styles.contactValue}>
-        {demoTripContact.phone ||
-          'Driver / attendant assigned later'}
+      <View style={styles.formCard}>
+        <Text style={styles.inputLabel}>
+          Parcel type
+        </Text>
+
+        <View style={styles.typeRow}>
+          <TypeOption
+            icon="📄"
+            label="Document"
+            selected={parcelType === 'Document'}
+            onPress={() => setParcelType('Document')}
+          />
+
+          <TypeOption
+            icon="📦"
+            label="Package"
+            selected={parcelType === 'Package'}
+            onPress={() => setParcelType('Package')}
+          />
+
+          <TypeOption
+            icon="🎁"
+            label="Other"
+            selected={parcelType === 'Other'}
+            onPress={() => setParcelType('Other')}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>
+            Contents / description
+          </Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              styles.descriptionInput,
+            ]}
+            placeholder={
+              parcelType === 'Document'
+                ? 'e.g. School documents'
+                : parcelType === 'Package'
+                  ? 'e.g. Clothes, shoes, electronics'
+                  : 'Describe what you are sending'
+            }
+            placeholderTextColor="#9AA5B3"
+            value={contents}
+            onChangeText={setContents}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+      </View>
+
+      {/* SENDER */}
+      <Text style={styles.sectionTitle}>
+        Sender
       </Text>
-    </View>
 
-    <Pressable
-      style={styles.callButton}
-      onPress={onCallTripContact}
-    >
-      <Text style={styles.callText}>
-        CALL
-      </Text>
-    </Pressable>
-  </View>
-</View>
+      <View style={styles.senderCard}>
+        <View style={styles.senderAvatar}>
+          <Text style={styles.senderAvatarText}>
+            ME
+          </Text>
+        </View>
 
-              {/* RECEIVER */}
-              <Text style={styles.sectionTitle}>
-                Receiver
-              </Text>
+        <View style={styles.senderInfo}>
+          <Text style={styles.senderName}>
+            {demoSender.name}
+          </Text>
 
-              <View style={styles.formCard}>
-                <InputField
-                  label="Receiver's name"
-                  placeholder="Enter receiver's full name"
-                  value={receiverName}
-                  onChangeText={setReceiverName}
-                />
+          <Text style={styles.senderPhone}>
+            {demoSender.phone ||
+              'Phone number from your account'}
+          </Text>
 
-                <InputField
-                  label="Receiver's phone number"
-                  placeholder="e.g. 6XXXXXXXX"
-                  value={receiverPhone}
-                  onChangeText={setReceiverPhone}
-                  keyboardType="phone-pad"
-                />
+          <Text style={styles.senderHint}>
+            Sender information comes from your account.
+          </Text>
+        </View>
+      </View>
 
-                
-              </View>
+      {/* FEE */}
+      <View style={styles.feeCard}>
+        <View>
+          <Text style={styles.feeLabel}>
+            ESTIMATED PARCEL FEE
+          </Text>
 
-              {/* PARCEL */}
-              <Text style={styles.sectionTitle}>
-                Parcel
-              </Text>
+          <Text style={styles.feeHint}>
+            {parcelType} • {from} → {destination}
+          </Text>
+        </View>
 
-              <View style={styles.formCard}>
-                <Text style={styles.inputLabel}>
-                  Parcel type
-                </Text>
+        <Text style={styles.feeAmount}>
+          {parcelFee.toLocaleString()} FCFA
+        </Text>
+      </View>
 
-                <View style={styles.typeRow}>
-                  <TypeOption
-                    icon="📄"
-                    label="Document"
-                    selected={parcelType === 'Document'}
-                    onPress={() => setParcelType('Document')}
-                  />
+      {/* REVIEW */}
+      <Pressable
+        style={[
+          styles.continueButton,
+          !canPreview &&
+            styles.continueButtonDisabled,
+        ]}
+        disabled={!canPreview}
+        onPress={onReview}
+      >
+        <Text style={styles.continueText}>
+          REVIEW PARCEL
+        </Text>
 
-                  <TypeOption
-                    icon="📦"
-                    label="Package"
-                    selected={parcelType === 'Package'}
-                    onPress={() => setParcelType('Package')}
-                  />
-
-                  <TypeOption
-                    icon="🎁"
-                    label="Other"
-                    selected={parcelType === 'Other'}
-                    onPress={() => setParcelType('Other')}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>
-                    Contents / description
-                  </Text>
-
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.descriptionInput,
-                    ]}
-                    placeholder={
-                      parcelType === 'Document'
-                        ? 'e.g. School documents'
-                        : parcelType === 'Package'
-                          ? 'e.g. Clothes, shoes, electronics'
-                          : 'Describe what you are sending'
-                    }
-                    placeholderTextColor="#9AA5B3"
-                    value={contents}
-                    onChangeText={setContents}
-                    multiline
-                    textAlignVertical="top"
-                  />
-                </View>
-              </View>
-
-              {/* SENDER */}
-              <Text style={styles.sectionTitle}>
-                Sender
-              </Text>
-
-              <View style={styles.senderCard}>
-                <View style={styles.senderAvatar}>
-                  <Text style={styles.senderAvatarText}>
-                    ME
-                  </Text>
-                </View>
-
-                <View style={styles.senderInfo}>
-                  <Text style={styles.senderName}>
-                    {demoSender.name}
-                  </Text>
-
-                  <Text style={styles.senderPhone}>
-                    {demoSender.phone ||
-                      'Phone number from your account'}
-                  </Text>
-
-                  <Text style={styles.senderHint}>
-                    Sender information comes from your account.
-                  </Text>
-                </View>
-              </View>
-
-              {/* FEE */}
-              <View style={styles.feeCard}>
-                <View>
-                  <Text style={styles.feeLabel}>
-                    ESTIMATED PARCEL FEE
-                  </Text>
-
-                  <Text style={styles.feeHint}>
-                    {parcelType} • {from} → {destination}
-                  </Text>
-                </View>
-
-                <Text style={styles.feeAmount}>
-                  {parcelFee.toLocaleString()} FCFA
-                </Text>
-              </View>
-
-              <Pressable
-                style={[
-                  styles.continueButton,
-                  !canPreview &&
-                    styles.continueButtonDisabled,
-                ]}
-                disabled={!canPreview}
-                onPress={() => onReview()}
-              >
-                <Text style={styles.continueText}>
-                  REVIEW PARCEL
-                </Text>
-
-                <Text style={styles.continueArrow}>
-                  →
-                </Text>
-              </Pressable>
-                  
+        <Text style={styles.continueArrow}>
+          →
+        </Text>
+      </Pressable>
     </>
   );
 }
 
-function InputField({ label, placeholder, value, onChangeText, keyboardType = 'default' }: {
-  label: string; placeholder: string; value: string; onChangeText: (value: string) => void; keyboardType?: 'default' | 'phone-pad';
+function InputField({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType = 'default',
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  keyboardType?: 'default' | 'phone-pad';
 }) {
-  return <View style={styles.inputGroup}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput style={styles.input} placeholder={placeholder} placeholderTextColor="#9AA5B3" value={value} onChangeText={onChangeText} keyboardType={keyboardType} />
-  </View>;
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>
+        {label}
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder={placeholder}
+        placeholderTextColor="#9AA5B3"
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+      />
+    </View>
+  );
 }
 
-function TypeOption({ icon, label, selected, onPress }: { icon: string; label: string; selected: boolean; onPress: () => void }) {
-  return <Pressable style={[styles.typeOption, selected && styles.typeOptionSelected]} onPress={onPress}>
-    <Text style={styles.typeIcon}>{icon}</Text>
-    <Text style={[styles.typeLabel, selected && styles.typeLabelSelected]}>{label}</Text>
-  </Pressable>;
+function TypeOption({
+  icon,
+  label,
+  selected,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={[
+        styles.typeOption,
+        selected && styles.typeOptionSelected,
+      ]}
+      onPress={onPress}
+    >
+      <Text style={styles.typeIcon}>
+        {icon}
+      </Text>
+
+      <Text
+        style={[
+          styles.typeLabel,
+          selected && styles.typeLabelSelected,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -404,33 +502,35 @@ const styles = StyleSheet.create({
   },
 
   journeyCard: {
-  backgroundColor: '#0B1F3A',
-  borderRadius: 22,
-  padding: 18,
-  flexDirection: 'row',
-  alignItems: 'center',
-  flexWrap: 'wrap',
-},
-journeyFee: {
-  width: '100%',
-  marginTop: 14,
-  paddingTop: 12,
-  borderTopWidth: 1,
-  borderTopColor: '#29415E',
-},
+    backgroundColor: '#0B1F3A',
+    borderRadius: 22,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
 
-journeyFeeLabel: {
-  fontSize: 9,
-  fontWeight: '900',
-  color: '#7DBBFF',
-},
+  journeyFee: {
+    width: '100%',
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#29415E',
+  },
 
-journeyFeeAmount: {
-  marginTop: 3,
-  fontSize: 20,
-  fontWeight: '900',
-  color: '#FFFFFF',
-},
+  journeyFeeLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#7DBBFF',
+  },
+
+  journeyFeeAmount: {
+    marginTop: 3,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+
   smallLabel: {
     fontSize: 8,
     fontWeight: '900',
@@ -470,13 +570,15 @@ journeyFeeAmount: {
   destinationSide: {
     alignItems: 'flex-end',
   },
-routeSide: {
-  flex: 1,
-},
 
-routeSelector: {
-  marginTop: 2,
-},
+  routeSide: {
+    flex: 1,
+  },
+
+  routeSelector: {
+    marginTop: 2,
+  },
+
   transportCard: {
     marginTop: 10,
     backgroundColor: '#FFFFFF',
@@ -491,11 +593,11 @@ routeSelector: {
     alignItems: 'center',
   },
 
- busImage: {
-  width: 64,
-  height: 44,
-  borderRadius: 12,
-},
+  busImage: {
+    width: 64,
+    height: 44,
+    borderRadius: 12,
+  },
 
   transportMain: {
     flex: 1,
@@ -510,7 +612,14 @@ routeSelector: {
 
   transportVehicle: {
     marginTop: 3,
-    fontSize: 9,
+    fontSize: 10,
+    color: '#526276',
+    fontWeight: '800',
+  },
+
+  transportId: {
+    marginTop: 2,
+    fontSize: 8,
     color: '#8290A1',
   },
 
@@ -727,47 +836,5 @@ routeSelector: {
     color: '#7DBBFF',
     fontSize: 20,
     marginLeft: 10,
-  },  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-
-  locationModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 20,
-  },
-
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#0B1F3A',
-    marginBottom: 12,
-  },
-
-  locationOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDF0F4',
-  },
-
-  locationOptionText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#182B43',
-  },
-
-  modalCancel: {
-    marginTop: 14,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-
-  modalCancelText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#1976D2',
   },
 });

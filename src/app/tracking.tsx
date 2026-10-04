@@ -1,162 +1,378 @@
-import {useLocalSearchParams, useRouter } from 'expo-router';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-type BusTrip = {
-  bookingReference: string;
-  operator: string;
-  route: string;
-  busNumber: string;
-  status: 'on_route' | 'boarding' | 'completed';
+import {
+  getOperator,
+  getTrip,
+  getVehicle,
+} from '@/data/transportData';
+
+type TrackingType = 'bus' | 'parcel';
+
+type LiveStatus =
+  | 'boarding'
+  | 'on_route'
+  | 'completed'
+  | 'cancelled';
+
+type LiveTrackingData = {
   currentLocation: string;
   nextStop: string;
   estimatedArrival: string;
-};
-
-const ACTIVE_TRIP: BusTrip | null = {
-  bookingReference: 'GST-2026-000184',
-  operator: 'GodSpeed Tech',
-  route: 'Kumba → Yaoundé',
-  busNumber: 'GST-001',
-  status: 'on_route',
-  currentLocation: 'Melong',
-  nextStop: 'Nkongsamba',
-  estimatedArrival: '13:00',
+  status: LiveStatus;
+  latitude?: number;
+  longitude?: number;
+  updatedAt?: string;
 };
 
 export default function TrackingScreen() {
   const router = useRouter();
 
-const { type } = useLocalSearchParams<{
-  type?: 'bus' | 'parcel';
-}>();
+  const {
+    type,
+    tripId,
+    reference,
+  } = useLocalSearchParams<{
+    type?: TrackingType;
+    tripId?: string;
+    reference?: string;
+  }>();
 
-const trackingType = type || 'bus';
-const isParcel = trackingType === 'parcel';
+  const trackingType: TrackingType = type === 'parcel'
+    ? 'parcel'
+    : 'bus';
 
-  const trip = ACTIVE_TRIP;
+  const isParcel = trackingType === 'parcel';
+
+  /*
+   * The trip is now identified by tripId.
+   *
+   * This is important because the trip already contains:
+   * trip.id
+   * trip.operatorId
+   * trip.vehicleId
+   */
+  const trip = tripId ? getTrip(tripId) : undefined;
+
+  const operator = trip
+    ? getOperator(trip.operatorId)
+    : undefined;
+
+  const vehicle = trip
+    ? getVehicle(trip.vehicleId)
+    : undefined;
+
+  /*
+   * Temporary live-state placeholder.
+   *
+   * IMPORTANT:
+   * This is the single place where the real Firebase/live GPS
+   * data will eventually enter this screen.
+   *
+   * We are NOT pretending these coordinates are real GPS.
+   */
+  const live: LiveTrackingData | null = trip
+    ? {
+        currentLocation: 'Live location unavailable',
+        nextStop: 'Updating...',
+        estimatedArrival: trip.arrival,
+        status:
+          trip.status === 'boarding'
+            ? 'boarding'
+            : trip.status === 'completed'
+              ? 'completed'
+              : trip.status === 'cancelled'
+                ? 'cancelled'
+                : 'on_route',
+      }
+    : null;
+
+  const statusLabel = getStatusLabel(live?.status);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backIcon}>‹</Text>
-          </Pressable>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backIcon}>‹</Text>
+            </Pressable>
 
-        <Text style={styles.headerTitle}>
-  {isParcel ? 'Track My Parcel' : 'Track My Bus'}
-</Text>
+            <Text style={styles.headerTitle}>
+              {isParcel ? 'Track My Parcel' : 'Track My Bus'}
+            </Text>
 
-          <View style={styles.headerSpacer} />
-        </View>
+            <View style={styles.headerSpacer} />
+          </View>
 
-        {!trip ? (
-         <EmptyTracking isParcel={isParcel} />
-        ) : (
-          <>
-            {/* Status */}
-            <View style={styles.statusCard}>
-              <View style={styles.statusTop}>
-                <View style={styles.liveDot} />
+          {!trip ? (
+            <EmptyTracking
+              isParcel={isParcel}
+              onBack={() => router.back()}
+            />
+          ) : (
+            <>
+              {/* Identity */}
+              <View style={styles.statusCard}>
+                <View style={styles.statusTop}>
+                  <View style={styles.liveDot} />
 
-                <Text style={styles.liveText}>LIVE</Text>
+                  <Text style={styles.liveText}>
+                    {live?.status === 'completed'
+                      ? 'COMPLETED'
+                      : 'LIVE'}
+                  </Text>
 
-                <Text style={styles.bookingRef}>
-                  {trip.bookingReference}
+                  <Text style={styles.reference}>
+                    {reference ||
+                      (isParcel
+                        ? 'Parcel tracking'
+                        : 'Trip tracking')}
+                  </Text>
+                </View>
+
+                <Text style={styles.route}>
+                  {trip.from} → {trip.to}
+                </Text>
+
+                <Text style={styles.operator}>
+                  {operator?.displayName || operator?.name || 'Operator'}
+                  {' · '}
+                  {vehicle?.name || 'Vehicle'}
                 </Text>
               </View>
 
-              <Text style={styles.route}>{trip.route}</Text>
+              {/* Live transport identity */}
+              <View style={styles.identityCard}>
+                <View style={styles.identityRow}>
+                  <View style={styles.identityBlock}>
+                    <Text style={styles.identityLabel}>
+                      OPERATOR
+                    </Text>
 
-              <Text style={styles.operator}>
-                {trip.operator} · Bus {trip.busNumber}
-              </Text>
-            </View>
-
-            {/* Map placeholder */}
-            <View style={styles.mapCard}>
-              <View style={styles.mapGrid}>
-                <View style={styles.mapLineOne} />
-                <View style={styles.mapLineTwo} />
-                <View style={styles.mapLineThree} />
-
-                <View style={styles.routeLine}>
-                  <View style={styles.startPoint} />
-                  <View style={styles.busPoint}>
-                    <Text style={styles.busIcon}>🚌</Text>
+                    <Text style={styles.identityValue}>
+                      {operator?.displayName ||
+                        operator?.name ||
+                        '—'}
+                    </Text>
                   </View>
-                  <View style={styles.endPoint} />
+
+                  <View style={styles.identityDivider} />
+
+                  <View style={styles.identityBlock}>
+                    <Text style={styles.identityLabel}>
+                      VEHICLE
+                    </Text>
+
+                    <Text style={styles.identityValue}>
+                      {vehicle?.name || '—'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.tripIdentity}>
+                  <Text style={styles.identityLabel}>
+                    TRIP ID
+                  </Text>
+
+                  <Text style={styles.tripId}>
+                    {trip.id}
+                  </Text>
+                </View>
+
+                {isParcel && (
+                  <View style={styles.tripIdentity}>
+                    <Text style={styles.identityLabel}>
+                      PARCEL REFERENCE
+                    </Text>
+
+                    <Text style={styles.tripId}>
+                      {reference || '—'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Route / live map */}
+              <View style={styles.mapCard}>
+                <View style={styles.mapGrid}>
+                  <View style={styles.mapLineOne} />
+                  <View style={styles.mapLineTwo} />
+                  <View style={styles.mapLineThree} />
+
+                  <View style={styles.routeLine}>
+                    <View style={styles.startPoint} />
+
+                    <View style={styles.busPoint}>
+                      <Text style={styles.busIcon}>
+                        {isParcel ? '📦' : '🚌'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.endPoint} />
+                  </View>
+
+                  <View style={styles.routeLabels}>
+                    <Text style={styles.routeLabel}>
+                      {trip.from}
+                    </Text>
+
+                    <Text style={styles.routeLabel}>
+                      {trip.to}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.locationBadge}>
+                  <View style={styles.locationDot} />
+
+                  <Text style={styles.locationText}>
+                    {live?.currentLocation ||
+                      'Waiting for live location'}
+                  </Text>
                 </View>
               </View>
 
-              <View style={styles.locationBadge}>
-                <View style={styles.locationDot} />
-                <Text style={styles.locationText}>
-                  {trip.currentLocation}
-                </Text>
-              </View>
-            </View>
+              {/* Live status */}
+              <View style={styles.infoCard}>
+                <View style={styles.infoBlock}>
+                  <Text style={styles.infoLabel}>
+                    CURRENT LOCATION
+                  </Text>
 
-            {/* Journey information */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>CURRENT LOCATION</Text>
-                <Text style={styles.infoValue}>
-                  {trip.currentLocation}
-                </Text>
-              </View>
+                  <Text style={styles.infoValue}>
+                    {live?.currentLocation || '—'}
+                  </Text>
+                </View>
 
-              <View style={styles.verticalDivider} />
+                <View style={styles.verticalDivider} />
 
-              <View style={styles.infoBlock}>
-                <Text style={styles.infoLabel}>NEXT STOP</Text>
-                <Text style={styles.infoValue}>
-                  {trip.nextStop}
-                </Text>
-              </View>
-            </View>
+                <View style={styles.infoBlock}>
+                  <Text style={styles.infoLabel}>
+                    NEXT STOP
+                  </Text>
 
-            {/* ETA */}
-            <View style={styles.etaCard}>
-              <View>
-                <Text style={styles.etaLabel}>
-                  ESTIMATED ARRIVAL
-                </Text>
-
-                <Text style={styles.etaValue}>
-                  {trip.estimatedArrival}
-                </Text>
+                  <Text style={styles.infoValue}>
+                    {live?.nextStop || '—'}
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.arrivingPill}>
-                <Text style={styles.arrivingText}>
-                  On route
-                </Text>
-              </View>
-            </View>
+              {/* ETA */}
+              <View style={styles.etaCard}>
+                <View>
+                  <Text style={styles.etaLabel}>
+                    ESTIMATED ARRIVAL
+                  </Text>
 
-            <Text style={styles.updated}>
-              Location updates automatically when live tracking is
-              available.
-            </Text>
-          </>
-        )}
-      </View>
+                  <Text style={styles.etaValue}>
+                    {live?.estimatedArrival || trip.arrival}
+                  </Text>
+                </View>
+
+                <View style={styles.arrivingPill}>
+                  <Text style={styles.arrivingText}>
+                    {statusLabel}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Journey */}
+              <View style={styles.journeyCard}>
+                <Text style={styles.sectionTitle}>
+                  Journey
+                </Text>
+
+                <View style={styles.journeyRow}>
+                  <View style={styles.journeyPoint}>
+                    <View style={styles.journeyDot} />
+
+                    <View style={styles.journeyLine} />
+                  </View>
+
+                  <View style={styles.journeyContent}>
+                    <Text style={styles.journeyCity}>
+                      {trip.from}
+                    </Text>
+
+                    <Text style={styles.journeyTime}>
+                      Departure {trip.departure}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.journeyRow}>
+                  <View style={styles.journeyPoint}>
+                    <View style={styles.journeyEndDot} />
+                  </View>
+
+                  <View style={styles.journeyContent}>
+                    <Text style={styles.journeyCity}>
+                      {trip.to}
+                    </Text>
+
+                    <Text style={styles.journeyTime}>
+                      Arrival {trip.arrival}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <Text style={styles.updated}>
+                Live location will update automatically when the
+                vehicle's GPS feed is connected.
+              </Text>
+            </>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function EmptyTracking({ isParcel }: { isParcel: boolean }) {
+function getStatusLabel(
+  status?: LiveStatus
+) {
+  switch (status) {
+    case 'boarding':
+      return 'Boarding';
+
+    case 'completed':
+      return 'Completed';
+
+    case 'cancelled':
+      return 'Cancelled';
+
+    case 'on_route':
+      return 'On route';
+
+    default:
+      return 'Waiting';
+  }
+}
+
+function EmptyTracking({
+  isParcel,
+  onBack,
+}: {
+  isParcel: boolean;
+  onBack: () => void;
+}) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIcon}>
@@ -166,14 +382,25 @@ function EmptyTracking({ isParcel }: { isParcel: boolean }) {
       </View>
 
       <Text style={styles.emptyTitle}>
-        {isParcel ? 'No active parcel' : 'No active trip'}
+        {isParcel
+          ? 'Parcel not found'
+          : 'Trip not found'}
       </Text>
 
       <Text style={styles.emptyText}>
         {isParcel
-          ? 'When you have an active parcel, its current location and delivery information will appear here.'
-          : 'When you have an active journey, your bus location and arrival information will appear here.'}
+          ? 'We could not find the trip attached to this parcel.'
+          : 'We could not find the trip attached to this tracking request.'}
       </Text>
+
+      <Pressable
+        style={styles.emptyButton}
+        onPress={onBack}
+      >
+        <Text style={styles.emptyButtonText}>
+          Go Back
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -182,6 +409,10 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F5F7FA',
+  },
+
+  scrollContent: {
+    paddingBottom: 30,
   },
 
   container: {
@@ -251,11 +482,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  bookingRef: {
+  reference: {
     marginLeft: 'auto',
     color: '#AEBACC',
     fontSize: 9,
     fontWeight: '700',
+    maxWidth: 150,
   },
 
   route: {
@@ -270,6 +502,59 @@ const styles = StyleSheet.create({
     color: '#AEBACC',
     fontSize: 10,
     fontWeight: '700',
+  },
+
+  identityCard: {
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E7EBF0',
+    padding: 16,
+  },
+
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  identityBlock: {
+    flex: 1,
+  },
+
+  identityDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E8ECF0',
+    marginHorizontal: 12,
+  },
+
+  identityLabel: {
+    fontSize: 8,
+    color: '#8B97A6',
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+
+  identityValue: {
+    marginTop: 5,
+    fontSize: 13,
+    color: '#182B43',
+    fontWeight: '900',
+  },
+
+  tripIdentity: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF1F4',
+  },
+
+  tripId: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#516176',
+    fontWeight: '800',
   },
 
   mapCard: {
@@ -359,6 +644,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 3,
     borderColor: '#0B1F3A',
+  },
+
+  routeLabels: {
+    position: 'absolute',
+    left: 28,
+    right: 28,
+    top: 142,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  routeLabel: {
+    fontSize: 9,
+    color: '#516176',
+    fontWeight: '900',
   },
 
   locationBadge: {
@@ -463,6 +763,74 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 
+  journeyCard: {
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E7EBF0',
+    padding: 17,
+  },
+
+  sectionTitle: {
+    fontSize: 14,
+    color: '#0B1F3A',
+    fontWeight: '900',
+    marginBottom: 15,
+  },
+
+  journeyRow: {
+    flexDirection: 'row',
+    minHeight: 48,
+  },
+
+  journeyPoint: {
+    width: 18,
+    alignItems: 'center',
+  },
+
+  journeyDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#0B1F3A',
+  },
+
+  journeyEndDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#0B1F3A',
+  },
+
+  journeyLine: {
+    flex: 1,
+    width: 1,
+    backgroundColor: '#D7DEE6',
+    marginTop: 4,
+    marginBottom: -4,
+  },
+
+  journeyContent: {
+    marginLeft: 10,
+    paddingBottom: 12,
+  },
+
+  journeyCity: {
+    fontSize: 13,
+    color: '#182B43',
+    fontWeight: '900',
+  },
+
+  journeyTime: {
+    marginTop: 3,
+    fontSize: 9,
+    color: '#8491A2',
+    fontWeight: '700',
+  },
+
   updated: {
     textAlign: 'center',
     marginTop: 15,
@@ -476,6 +844,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 30,
+    paddingTop: 100,
   },
 
   emptyIcon: {
@@ -505,4 +874,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
   },
+
+  emptyButton: {
+    marginTop: 20,
+    backgroundColor: '#0B1F3A',
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+  },
 });
+

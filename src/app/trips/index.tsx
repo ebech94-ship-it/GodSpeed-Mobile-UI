@@ -115,6 +115,7 @@ export default function TripsScreen() {
                   pathname: '/booking',
                   params: {
                     tripId: trip.id,
+                    operatorId: trip.operatorId,
                     from: trip.from,
                     to: trip.to,
                     date: date || '',

@@ -672,9 +672,11 @@ export const OPERATORS: Operator[] = [
     id: 'godspeed-tech',
     name: 'GodSpeed Tech',
     displayName: 'GodSpeed Voyage',
+    countryCode: 'CM',
+    active: true,
+    verificationStatus: 'verified',
   },
 ];
-
 // ============================================================
 // SEAT LAYOUT - GS TECH A
 // ============================================================

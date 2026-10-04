@@ -23,18 +23,24 @@ type UserProfile = {
   email?: string;
   role?: string;
   accountStatus?: string;
+  identity?: {
+    verified?: boolean;
+    verifiedAt?: any;
+  };
   trips?: number;
   tickets?: number;
   createdAt?: any;
   updatedAt?: any;
 
   preferences?: {
-     notifications?: boolean; 
-    tripUpdates?: boolean;
-     promotions?: boolean; 
-     location?: boolean; 
-     language?: 'English' | 'Français';
-     };
+  notifications?: boolean;
+  tripUpdates?: boolean;
+  promotions?: boolean;
+  location?: boolean;
+  language?: 'English' | 'Français';
+  themeMode?: 'system' | 'light' | 'dark';
+  soundEnabled?: boolean;
+};
   verification?: {
     status?: VerificationStatus;
     documentType?: string;

@@ -1,43 +1,47 @@
 
 import { useAuth } from '@/auth/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 import { auth, db } from '@/firebase/config';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
 } from 'react-native';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, profile } = useAuth();
 
+  const {
+    themeMode,
+    setThemeMode,
+    soundEnabled,
+    setSoundEnabled,
+  } = useSettings();
+
   const [notifications, setNotifications] = useState(true);
   const [tripUpdates, setTripUpdates] = useState(true);
   const [promotions, setPromotions] = useState(false);
-  const [location, setLocation] = useState(true);
-  const [language, setLanguage] = useState<'English' | 'Français'>('English');
 
   const [saving, setSaving] = useState(false);
 
-  // Load saved preferences from the user's profile
+  // Load saved notification preferences
   useEffect(() => {
     if (!profile?.preferences) return;
 
     setNotifications(profile.preferences.notifications ?? true);
     setTripUpdates(profile.preferences.tripUpdates ?? true);
     setPromotions(profile.preferences.promotions ?? false);
-    setLocation(profile.preferences.location ?? true);
-    setLanguage(profile.preferences.language ?? 'English');
   }, [profile]);
 
   const updatePreference = async (
@@ -45,9 +49,9 @@ export default function SettingsScreen() {
       | 'notifications'
       | 'tripUpdates'
       | 'promotions'
-      | 'location'
-      | 'language',
-    value: boolean | 'English' | 'Français'
+      | 'themeMode'
+      | 'soundEnabled',
+    value: boolean | 'system' | 'light' | 'dark'
   ) => {
     if (!user) return;
 
@@ -70,6 +74,18 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleThemeMode = async (
+    value: 'system' | 'light' | 'dark'
+  ) => {
+    setThemeMode(value);
+    await updatePreference('themeMode', value);
+  };
+
+  const handleSound = async (value: boolean) => {
+    setSoundEnabled(value);
+    await updatePreference('soundEnabled', value);
+  };
+
   const handleNotifications = async (value: boolean) => {
     setNotifications(value);
     await updatePreference('notifications', value);
@@ -83,23 +99,6 @@ export default function SettingsScreen() {
   const handlePromotions = async (value: boolean) => {
     setPromotions(value);
     await updatePreference('promotions', value);
-  };
-
-  const handleLocation = async (value: boolean) => {
-    setLocation(value);
-    await updatePreference('location', value);
-  };
-
-  const handleLanguage = async (value: 'English' | 'Français') => {
-    setLanguage(value);
-    await updatePreference('language', value);
-  };
-
-  const handleSecurity = () => {
-    Alert.alert(
-      'Password & Security',
-      'Password changes and account security controls will be available here.'
-    );
   };
 
   const handleSignOut = () => {
@@ -146,6 +145,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backText}>‹</Text>
@@ -162,6 +162,55 @@ export default function SettingsScreen() {
             <Text style={styles.savingText}>Saving...</Text>
           </View>
         )}
+
+        {/* APPEARANCE */}
+        <Text style={styles.sectionTitle}>Appearance</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.rowTitle}>Theme</Text>
+
+          <Text style={styles.rowDescription}>
+            Choose how GodSpeed looks on your device.
+          </Text>
+
+          <View style={styles.themeRow}>
+            {(['system', 'light', 'dark'] as const).map((mode) => (
+              <Pressable
+                key={mode}
+                style={[
+                  styles.themeButton,
+                  themeMode === mode && styles.themeButtonActive,
+                ]}
+                onPress={() => handleThemeMode(mode)}
+              >
+                <Text
+                  style={[
+                    styles.themeText,
+                    themeMode === mode && styles.themeTextActive,
+                  ]}
+                >
+                  {mode === 'system'
+                    ? 'System'
+                    : mode === 'light'
+                    ? 'Light'
+                    : 'Dark'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* SOUND */}
+        <Text style={styles.sectionTitle}>Sound</Text>
+
+        <View style={styles.card}>
+          <SettingRow
+            title="App sounds"
+            description="Play sounds for important actions and alerts."
+            value={soundEnabled}
+            onValueChange={handleSound}
+          />
+        </View>
 
         {/* NOTIFICATIONS */}
         <Text style={styles.sectionTitle}>Notifications</Text>
@@ -193,85 +242,14 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* LOCATION */}
-        <Text style={styles.sectionTitle}>Location</Text>
-
-        <View style={styles.card}>
-          <SettingRow
-            title="Location services"
-            description="Allow GodSpeed features to use your location preference."
-            value={location}
-            onValueChange={handleLocation}
-          />
-        </View>
-
-        {/* LANGUAGE */}
-        <Text style={styles.sectionTitle}>Language</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.rowTitle}>App language</Text>
-          <Text style={styles.rowDescription}>
-            Choose the language used by the application.
-          </Text>
-
-          <View style={styles.languageRow}>
-            <Pressable
-              style={[
-                styles.languageButton,
-                language === 'English' && styles.languageButtonActive,
-              ]}
-              onPress={() => handleLanguage('English')}
-            >
-              <Text
-                style={[
-                  styles.languageText,
-                  language === 'English' && styles.languageTextActive,
-                ]}
-              >
-                English
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.languageButton,
-                language === 'Français' && styles.languageButtonActive,
-              ]}
-              onPress={() => handleLanguage('Français')}
-            >
-              <Text
-                style={[
-                  styles.languageText,
-                  language === 'Français' && styles.languageTextActive,
-                ]}
-              >
-                Français
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* SECURITY */}
-        <Text style={styles.sectionTitle}>Security</Text>
-
-        <View style={styles.card}>
-          <Pressable style={styles.actionRow} onPress={handleSecurity}>
-            <View style={styles.actionTextContainer}>
-              <Text style={styles.rowTitle}>Password & Security</Text>
-              <Text style={styles.rowDescription}>
-                Manage your password and account security.
-              </Text>
-            </View>
-
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-        </View>
-
         {/* ACCOUNT */}
         <Text style={styles.sectionTitle}>Account</Text>
 
         <View style={styles.card}>
-          <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+          <Pressable
+            style={styles.signOutButton}
+            onPress={handleSignOut}
+          >
             <Text style={styles.signOutText}>Sign out</Text>
           </Pressable>
         </View>
@@ -299,7 +277,10 @@ function SettingRow({
     <View style={styles.settingRow}>
       <View style={styles.settingTextContainer}>
         <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowDescription}>{description}</Text>
+
+        <Text style={styles.rowDescription}>
+          {description}
+        </Text>
       </View>
 
       <Switch
@@ -416,14 +397,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  languageRow: {
+  themeRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginTop: 14,
     marginBottom: 12,
   },
 
-  languageButton: {
+  themeButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
@@ -431,50 +412,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  languageButtonActive: {
+  themeButtonActive: {
     backgroundColor: '#1976D2',
   },
 
-  languageText: {
-    fontSize: 14,
+  themeText: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#555',
   },
 
-  languageTextActive: {
+  themeTextActive: {
     color: '#FFFFFF',
   },
 
-  actionRow: {
-    minHeight: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  actionTextContainer: {
-    flex: 1,
-  },
-
-  chevron: {
-    fontSize: 28,
-    color: '#9CA3AF',
-  },
-
   signOutButton: {
-  minHeight: 54,
-  backgroundColor: '#D32F2F',
-  borderRadius: 12,
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginVertical: 10,
-},
+    minHeight: 54,
+    backgroundColor: '#D32F2F',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
 
-signOutText: {
-  color: '#FFFFFF',
-  fontSize: 15,
-  fontWeight: '800',
-},
+  signOutText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
 
   footer: {
     textAlign: 'center',
@@ -483,4 +448,3 @@ signOutText: {
     marginTop: 30,
   },
 });
-

@@ -14,6 +14,7 @@ export default function ConfirmationScreen() {
 
   const {
     tripId,
+     operatorId,
     from,
     to,
     date,
@@ -27,6 +28,7 @@ export default function ConfirmationScreen() {
     paymentMethod,
   } = useLocalSearchParams<{
   tripId?: string;
+   operatorId?: string;
     from?: string;
     to?: string;
     date?: string;
@@ -204,6 +206,7 @@ export default function ConfirmationScreen() {
               params: {
                 bookingReference,
                  tripId: tripId || '',
+                  operatorId: operatorId || '',
                 from: from || 'Kumba',
                 to: to || 'Yaoundé',
                 date: date || '',
