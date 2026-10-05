@@ -14,7 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const SPLASH_DURATION = 10000;
+const SPLASH_DURATION = 5000;
 
 export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
@@ -26,12 +26,9 @@ export function AnimatedSplashOverlay() {
       easing: Easing.linear,
     });
 
-    const timer = setTimeout(async () => {
-      setVisible(false);
-
-      // Release Expo's native splash after our GodSpeed splash finishes.
-      await SplashScreen.hideAsync();
-    }, SPLASH_DURATION);
+   const timer = setTimeout(() => {
+  setVisible(false);
+}, SPLASH_DURATION);
 
     return () => clearTimeout(timer);
   }, []);

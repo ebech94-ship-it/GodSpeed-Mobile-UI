@@ -10,16 +10,14 @@
     "ios": {
       "icon": "./assets/expo.icon"
     },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.ebeh.godspeedmobility"
-    },
+   "android": {
+  "adaptiveIcon": {
+    "backgroundColor": "#06152B",
+    "foregroundImage": "./assets/images/splash-icon.png"
+  },
+  "predictiveBackGestureEnabled": false,
+  "package": "com.ebeh.godspeedmobility"
+},
     "web": {
       "output": "static",
       "favicon": "./assets/images/splash-icon.png"

@@ -1,6 +1,7 @@
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AuthProvider } from '@/auth/AuthContext';
@@ -12,6 +13,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 SplashScreen.preventAutoHideAsync();
 
 function AppTheme() {
+  useEffect(() => {
+  SplashScreen.hideAsync();
+}, []);
   const systemColorScheme = useColorScheme();
   const { themeMode } = useSettings();
 

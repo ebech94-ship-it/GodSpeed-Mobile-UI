@@ -1,5 +1,6 @@
 import { useAuth } from '@/auth/AuthContext';
-import { LOCATIONS, OPERATORS, } from '@/data/transportData';
+import { LOCATIONS } from '@/data/locations';
+import { OPERATORS } from '@/data/transportData';
 import * as Contacts from 'expo-contacts';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
